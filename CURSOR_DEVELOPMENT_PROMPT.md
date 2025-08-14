@@ -7,10 +7,17 @@ Use this prompt in Cursor AI to continue developing the Wildfire Risk Prediction
 ```
 I'm developing an open-source educational project for wildfire risk prediction that combines NEON ecological data with satellite imagery and machine learning. The project structure is already set up with:
 
-- NEON data collection module (src/data_collection/neon_client.py)
+- NEON data collection module (src/data_collection/neon_client.py) with support for both ground-based sensors and Airborne Observation Platform (AOP) data
+- AOP-satellite crosswalk capabilities for hyperspectral/LiDAR to multispectral mapping
 - Basic project structure and README
-- Example notebook for data exploration
+- Example notebooks for data exploration and AOP crosswalk
 - Test framework
+
+Key enhancement: The project now includes NEON AOP integration using DP3 mosaic products:
+- DP3.30006.001: Spectrometer orthorectified surface directional reflectance - mosaic (hyperspectral)
+- DP3.30010.001: High-resolution orthorectified camera imagery - mosaic (RGB)
+- DP3.30015.001: Ecosystem structure (LiDAR-derived canopy metrics)
+- DP3.30024.001: Elevation - LiDAR (Digital Terrain and Surface Models)
 
 Please help me implement the following components systematically:
 
