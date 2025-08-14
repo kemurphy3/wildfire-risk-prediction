@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""
+Launcher script for the Wildfire Risk Prediction Dashboard.
+
+This script starts the interactive web dashboard for wildfire risk assessment.
+"""
+
+import sys
+import os
+
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+def main():
+    """Launch the dashboard application."""
+    try:
+        from dashboard.app import create_app
+        
+        print("🚀 Starting Wildfire Risk Prediction Dashboard...")
+        print("📊 Initializing models and demo data...")
+        
+        # Create and run the app
+        app = create_app()
+        
+        print("✅ Dashboard ready!")
+        print("🌐 Opening at: http://localhost:8050")
+        print("📱 Press Ctrl+C to stop the server")
+        
+        app.run(debug=True, host='0.0.0.0', port=8050)
+        
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        print("💡 Make sure all dependencies are installed:")
+        print("   pip install -r requirements.txt")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error starting dashboard: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
