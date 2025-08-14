@@ -42,12 +42,6 @@ class NEONDataCollector:
     
     # NEON Airborne Observation Platform (AOP) products for satellite crosswalk
     AOP_PRODUCTS = {
-        "DP1.30006.001": "Spectrometer orthorectified surface directional reflectance - flightline",
-        "DP1.30008.001": "Spectrometer orthorectified at-sensor radiance - flightline",
-        "DP1.30010.001": "High-resolution orthorectified camera imagery",
-        "DP1.30003.001": "Discrete return LiDAR point cloud",
-        "DP1.30015.001": "Ecosystem structure (Canopy Height Model)",
-        "DP1.30024.001": "Elevation - LiDAR (DTM and DSM)",
         "DP3.30006.001": "Spectrometer orthorectified surface directional reflectance - mosaic",
         "DP3.30010.001": "High-resolution orthorectified camera imagery - mosaic",
         "DP3.30015.001": "Ecosystem structure",

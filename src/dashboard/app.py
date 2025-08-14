@@ -73,7 +73,13 @@ app.layout = html.Div([
                             marks={i: str(i) for i in range(0, 101, 20)},
                             tooltip={"placement": "bottom", "always_visible": True}
                         )
-                    ], style={'display': 'inline-block', 'width': '300px'})
+                    ], style={'display': 'inline-block', 'width': '300px'}),
+                    
+                    # Hidden input for map bounds (used by real data integration)
+                    dcc.Store(id='map-bounds', data={
+                        'min_lat': 32.5, 'max_lat': 42.0,
+                        'min_lon': -124.5, 'max_lon': -114.0
+                    })
                 ], style={'marginBottom': '20px'}),
                 
                 # Risk Map
@@ -208,50 +214,168 @@ app.layout = html.Div([
             ])
         ]),
         
-        # Prediction Interface Tab
+        # Make Predictions Tab
         dcc.Tab(label='Make Predictions', children=[
             html.Div([
                 html.H3("Real-time Risk Prediction", style={'color': '#2E8B57'}),
                 
-                # Input Form
+                # Prediction Interface
                 html.Div([
+                    html.H4("Manual Risk Prediction", style={'color': '#2E8B57', 'marginBottom': '20px'}),
+                    
+                    # Input fields
                     html.Div([
-                        html.H4("Environmental Conditions"),
-                        html.Label("Temperature (°C):"),
-                        dcc.Input(id='temp-input', type='number', value=25, step=0.1),
+                        html.Div([
+                            html.Label("Temperature (°C):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='temp-input', type='number', value=25, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
                         
-                        html.Label("Humidity (%):"),
-                        dcc.Input(id='humidity-input', type='number', value=60, step=1),
-                        
-                        html.Label("Wind Speed (km/h):"),
-                        dcc.Input(id='wind-input', type='number', value=15, step=1),
-                        
-                        html.Label("Precipitation (mm):"),
-                        dcc.Input(id='precip-input', type='number', value=0, step=0.1)
-                    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        html.Div([
+                            html.Label("Humidity (%):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='humidity-input', type='number', value=60, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block'})
+                    ]),
                     
                     html.Div([
-                        html.H4("Terrain & Vegetation"),
-                        html.Label("Elevation (m):"),
-                        dcc.Input(id='elevation-input', type='number', value=500, step=10),
+                        html.Div([
+                            html.Label("Wind Speed (km/h):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='wind-input', type='number', value=15, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
                         
-                        html.Label("Slope (°):"),
-                        dcc.Input(id='slope-input', type='number', value=5, step=1),
+                        html.Div([
+                            html.Label("Precipitation (mm):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='precip-input', type='number', value=0, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block'})
+                    ]),
+                    
+                    html.Div([
+                        html.Div([
+                            html.Label("Elevation (m):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='elevation-input', type='number', value=100, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
                         
-                        html.Label("Vegetation Density:"),
-                        dcc.Slider(id='veg-density-input', min=0, max=100, value=50, step=5),
+                        html.Div([
+                            html.Label("Slope (%):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='slope-input', type='number', value=5, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block'})
+                    ]),
+                    
+                    html.Div([
+                        html.Div([
+                            html.Label("Vegetation Density:", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='veg-density-input', type='number', value=0.7, step=0.1, min=0, max=1, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
                         
-                        html.Label("Fuel Moisture (%):"),
-                        dcc.Input(id='fuel-moisture-input', type='number', value=20, step=1)
+                        html.Div([
+                            html.Label("Fuel Moisture (%):", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='fuel-moisture-input', type='number', value=30, style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block'})
+                    ]),
+                    
+                    html.Button('Predict Risk', id='predict-button', n_clicks=0, 
+                              style={'backgroundColor': '#2E8B57', 'color': 'white', 'padding': '10px 20px', 'border': 'none', 'borderRadius': '5px', 'cursor': 'pointer', 'marginTop': '10px'}),
+                    
+                    html.Div(id='manual-prediction-results', style={'marginTop': '20px'})
+                ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '10px', 'marginBottom': '20px'}),
+                
+                # Location-based Prediction
+                html.Div([
+                    html.H4("Location-Based Risk Prediction", style={'color': '#2E8B57', 'marginBottom': '20px'}),
+                    
+                    html.Div([
+                        html.Div([
+                            html.Label("Latitude:", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='pred-lat', type='number', placeholder='e.g., 37.7749', style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%'}),
+                        
+                        html.Div([
+                            html.Label("Longitude:", style={'fontWeight': 'bold'}),
+                            dcc.Input(id='pred-lon', type='number', placeholder='e.g., -122.4194', style={'width': '100%', 'marginBottom': '10px'})
+                        ], style={'width': '48%', 'display': 'inline-block'})
+                    ]),
+                    
+                    html.Button('Calculate Risk', id='calculate-risk-btn', n_clicks=0,
+                              style={'backgroundColor': '#FF6B35', 'color': 'white', 'padding': '10px 20px', 'border': 'none', 'borderRadius': '5px', 'cursor': 'pointer', 'marginTop': '10px'}),
+                    
+                    html.Div(id='location-prediction-results', style={'marginTop': '20px'})
+                ], style={'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '10px'})
+            ])
+        ]),
+        
+        # Environmental Monitoring Tab
+        dcc.Tab(label='Environmental Monitoring', children=[
+            html.Div([
+                html.H3("Real-time Environmental Data", style={'color': '#2E8B57'}),
+                
+                # Location selector
+                html.Div([
+                    html.Div([
+                        html.Label("Monitor Location:"),
+                        dcc.Dropdown(
+                            id='monitor-location',
+                            options=[
+                                {'label': 'San Francisco', 'value': 'sf'},
+                                {'label': 'Los Angeles', 'value': 'la'},
+                                {'label': 'San Diego', 'value': 'sd'},
+                                {'label': 'Sacramento', 'value': 'sac'},
+                                {'label': 'Custom Location', 'value': 'custom'}
+                            ],
+                            value='sf',
+                            style={'width': '200px'}
+                        )
+                    ], style={'display': 'inline-block', 'marginRight': '20px'}),
+                    
+                    html.Div([
+                        html.Label("Custom Lat:"),
+                        dcc.Input(
+                            id='custom-lat',
+                            type='number',
+                            placeholder='37.7749',
+                            style={'width': '120px'}
+                        )
+                    ], style={'display': 'inline-block', 'marginRight': '20px'}),
+                    
+                    html.Div([
+                        html.Label("Custom Lon:"),
+                        dcc.Input(
+                            id='custom-lon',
+                            type='number',
+                            placeholder='-122.4194',
+                            style={'width': '120px'}
+                        )
+                    ], style={'display': 'inline-block', 'marginRight': '20px'}),
+                    
+                    html.Button('Update Data', id='update-env-data-btn', n_clicks=0,
+                              style={'backgroundColor': '#FF6B35', 'color': 'white', 'border': 'none', 'padding': '10px 20px'})
+                ], style={'marginBottom': '20px'}),
+                
+                # Environmental data display
+                html.Div([
+                    # Weather data
+                    html.Div([
+                        html.H4("Weather Conditions", style={'color': '#2E8B57'}),
+                        html.Div(id='weather-display')
+                    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginRight': '2%'}),
+                    
+                    # Satellite data
+                    html.Div([
+                        html.H4("Satellite Data", style={'color': '#2E8B57'}),
+                        html.Div(id='satellite-display')
                     ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'})
                 ], style={'marginBottom': '20px'}),
                 
-                # Prediction Button
-                html.Button('Predict Risk', id='predict-button', n_clicks=0,
-                           style={'backgroundColor': '#2E8B57', 'color': 'white', 'padding': '10px 20px', 'border': 'none', 'borderRadius': '5px', 'cursor': 'pointer'}),
-                
-                # Results
-                html.Div(id='prediction-results', style={'marginTop': '20px'})
+                # Topography and fire history
+                html.Div([
+                    html.Div([
+                        html.H4("Topographical Information", style={'color': '#2E8B57'}),
+                        html.Div(id='topography-display')
+                    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginRight': '2%'}),
+                    
+                    html.Div([
+                        html.H4("Fire History", style={'color': '#2E8B57'}),
+                        html.Div(id='fire-history-display')
+                    ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'})
+                ])
             ])
         ])
     ], style={'marginTop': '20px'}),
