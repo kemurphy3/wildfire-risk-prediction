@@ -1,46 +1,105 @@
-# Core dependencies
-numpy>=1.21.0
-pandas>=1.3.0
-scikit-learn>=1.0.0
-xgboost>=1.5.0
-tensorflow>=2.8.0
-keras>=2.8.0
+# =============================================================================
+# Wildfire Risk Prediction System - Requirements
+# =============================================================================
+# This file contains all dependencies needed to run the complete system
+# Install with: pip install -r requirements.txt
+# =============================================================================
 
-# Data collection and processing
-requests>=2.25.0
-geopandas>=0.10.0
-shapely>=1.8.0
-rasterio>=1.2.0
-xarray>=0.20.0
-earthengine-api>=0.1.0
+# =============================================================================
+# CORE MACHINE LEARNING & DATA SCIENCE
+# =============================================================================
+numpy>=1.21.0                    # Numerical computing
+pandas>=1.3.0                    # Data manipulation and analysis
+scikit-learn>=1.0.0              # Machine learning algorithms
+xgboost>=1.5.0                   # Gradient boosting framework
+tensorflow>=2.8.0                # Deep learning framework
+keras>=2.8.0                     # High-level neural network API
 
-# API and web framework
-fastapi>=0.68.0
-uvicorn>=0.15.0
-pydantic>=1.8.0
+# =============================================================================
+# DATA COLLECTION & PROCESSING
+# =============================================================================
+requests>=2.25.0                 # HTTP library for API calls
+geopandas>=0.10.0                # Geospatial data manipulation
+shapely>=1.8.0                   # Geometric operations
+rasterio>=1.2.0                  # Raster data processing
+xarray>=0.20.0                   # N-dimensional labeled arrays
 
-# Dashboard and visualization
-dash>=2.0.0
-plotly>=5.0.0
-dash-bootstrap-components>=1.0.0
-matplotlib>=3.5.0
-seaborn>=0.11.0
+# =============================================================================
+# GOOGLE EARTH ENGINE INTEGRATION
+# =============================================================================
+earthengine-api>=0.1.0           # Google Earth Engine Python API
+google-auth>=2.0.0               # Google authentication
+google-auth-oauthlib>=0.4.0      # OAuth 2.0 authentication
+google-auth-httplib2>=0.1.0      # HTTP client for Google APIs
 
-# Machine learning and optimization
-optuna>=2.10.0
-shap>=0.40.0
-joblib>=1.1.0
+# =============================================================================
+# WEB FRAMEWORK & API
+# =============================================================================
+fastapi>=0.68.0                  # Modern web framework for APIs
+uvicorn>=0.15.0                  # ASGI server for FastAPI
+pydantic>=1.8.0                  # Data validation using Python type annotations
 
-# Testing and development
-pytest>=6.2.0
-pytest-cov>=2.12.0
+# =============================================================================
+# DASHBOARD & VISUALIZATION
+# =============================================================================
+dash>=2.0.0                      # Interactive web dashboard framework
+plotly>=5.0.0                    # Interactive plotting library
+dash-bootstrap-components>=1.0.0  # Bootstrap components for Dash
+matplotlib>=3.5.0                # Basic plotting library
+seaborn>=0.11.0                  # Statistical data visualization
 
-# Utilities
-python-dotenv>=0.19.0
+# =============================================================================
+# MACHINE LEARNING TOOLS & OPTIMIZATION
+# =============================================================================
+optuna>=2.10.0                   # Hyperparameter optimization
+shap>=0.40.0                     # Model explainability and SHAP values
+joblib>=1.1.0                    # Parallel computing and model persistence
 
-# Additional dependencies for wildfire risk prediction
-folium>=0.12.0
-branca>=0.4.2
-geopy>=2.2.0
-netCDF4>=1.6.0
-h5py>=3.7.0
+# =============================================================================
+# TESTING & DEVELOPMENT
+# =============================================================================
+pytest>=6.2.0                    # Testing framework
+pytest-cov>=2.12.0               # Coverage reporting for pytest
+
+# =============================================================================
+# UTILITIES & CONFIGURATION
+# =============================================================================
+python-dotenv>=0.19.0            # Environment variable management
+
+# =============================================================================
+# GEOSPATIAL & MAPPING
+# =============================================================================
+folium>=0.12.0                   # Interactive maps
+branca>=0.4.2                    # Color utilities for maps
+geopy>=2.2.0                     # Geocoding and distance calculations
+
+# =============================================================================
+# DATA FORMATS & I/O
+# =============================================================================
+netCDF4>=1.6.0                   # NetCDF file format support
+h5py>=3.7.0                      # HDF5 file format support
+pyproj>=3.0.0                    # Cartographic projections and transformations
+
+# =============================================================================
+# PERFORMANCE & OPTIMIZATION
+# =============================================================================
+numba>=0.56.0                    # JIT compiler for Python
+cython>=0.29.0                   # C extensions for Python
+
+# =============================================================================
+# LOGGING & MONITORING
+# =============================================================================
+structlog>=21.0.0                # Structured logging
+
+# =============================================================================
+# OPTIONAL DEPENDENCIES (for advanced features)
+# =============================================================================
+# Uncomment these if you need additional functionality:
+# jupyter>=1.0.0                 # Jupyter notebooks
+# ipywidgets>=7.6.0              # Interactive widgets for Jupyter
+# nbformat>=5.1.0                # Jupyter notebook format support
+# papermill>=2.3.0               # Parameterized notebook execution
+# mlflow>=1.20.0                 # Machine learning lifecycle management
+# wandb>=0.12.0                  # Experiment tracking and visualization
+# docker>=5.0.0                  # Containerization support
+# kubernetes>=18.0.0             # Kubernetes deployment support
