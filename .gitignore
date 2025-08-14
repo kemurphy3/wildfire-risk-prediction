@@ -9,6 +9,23 @@ venv/
 .env
 .venv
 
+# Environment and secrets
+.env*
+*.env
+secrets/
+credentials/
+*.key
+*.pem
+*.p12
+*.pfx
+config/secrets.yaml
+config/secrets.yml
+
+# Google Earth Engine credentials (NEVER commit these!)
+wildfire-risk*.json
+*service-account*.json
+*credentials*.json
+
 # Data files
 data/raw/
 data/processed/

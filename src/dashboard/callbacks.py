@@ -18,12 +18,31 @@ import json
 from src.models.baseline_model import RandomForestFireRiskModel
 from src.models.xgboost_model import XGBoostFireRiskModel
 
-# Global variables for demo data and models
+# Import real data integration
+from .data_integration import RealDataIntegration
+from config import get_config
+
+# Global variables for data integration and models
+DATA_INTEGRATION = None
 DEMO_MODELS = {}
 DEMO_DATA = None
 
+def initialize_data_integration():
+    """Initialize the real data integration system."""
+    global DATA_INTEGRATION
+    
+    try:
+        config = get_config()
+        DATA_INTEGRATION = RealDataIntegration(config)
+        print("Real data integration initialized successfully!")
+        return True
+    except Exception as e:
+        print(f"Error initializing data integration: {e}")
+        print("Falling back to demo data only")
+        return False
+
 def initialize_demo_data():
-    """Initialize demo data and models for the dashboard."""
+    """Initialize demo data and models for the dashboard (fallback)."""
     global DEMO_DATA, DEMO_MODELS
     
     # Generate synthetic demo data
@@ -56,8 +75,8 @@ def initialize_demo_data():
     X[:, 10] = np.clip(X[:, 10] * 20 + 40, 10, 70)  # Soil moisture: 10-70%
     X[:, 11] = np.clip(X[:, 11] * 25 + 50, 10, 90)  # Canopy cover: 10-90%
     X[:, 12] = np.clip(X[:, 12] * 90 + 180, 0, 360)  # Aspect: 0-360°
-    X[:, 13] = np.clip(X[:, 13] * 5000 + 10000, 100, 20000)  # Distance to road
-    X[:, 14] = np.clip(X[:, 14] * 50 + 100, 10, 200)  # Population density
+    X[:, 13] = np.clip(X[:, 12] * 5000 + 10000, 100, 20000)  # Distance to road
+    X[:, 14] = np.clip(X[:, 12] * 50 + 100, 10, 200)  # Population density
     
     # Generate target variable (fire risk score 0-100)
     # Make it depend on key features
@@ -104,8 +123,9 @@ def initialize_demo_data():
 def register_callbacks(app):
     """Register all callback functions with the Dash app."""
     
-    # Initialize demo data
-    initialize_demo_data()
+    # Initialize data integration (with fallback to demo)
+    if not initialize_data_integration():
+        initialize_demo_data()
     
     # Risk Map Callback
     @app.callback(
@@ -113,10 +133,95 @@ def register_callbacks(app):
          Output('risk-stats', 'children'),
          Output('risk-distribution', 'figure')],
         [Input('model-selector', 'value'),
-         Input('risk-threshold', 'value')]
+         Input('risk-threshold', 'value'),
+         Input('map-bounds', 'value')]
     )
-    def update_risk_map(model_type, threshold):
+    def update_risk_map(model_type, threshold, map_bounds):
         """Update the risk map based on model selection and threshold."""
+        if DATA_INTEGRATION:
+            return update_real_risk_map(threshold, map_bounds)
+        else:
+            return update_demo_risk_map(model_type, threshold)
+    
+    def update_real_risk_map(threshold, map_bounds):
+        """Update risk map using real data integration."""
+        try:
+            # Get California bounding box
+            config = get_config()
+            bounds = config['geo']['bounding_box']
+            
+            # Get grid risk assessment
+            grid_data = DATA_INTEGRATION.get_grid_risk_assessment(
+                (bounds['min_lat'], bounds['max_lat'], bounds['min_lon'], bounds['max_lon']),
+                grid_size=50
+            )
+            
+            if grid_data.empty:
+                return go.Figure(), "No risk data available", go.Figure()
+            
+            # Create risk heatmap
+            fig_map = go.Figure()
+            
+            # Create heatmap using grid data
+            risk_matrix = grid_data.pivot(index='grid_y', columns='grid_x', values='risk_score')
+            
+            fig_map.add_trace(go.Heatmap(
+                z=risk_matrix.values,
+                colorscale='RdYlGn_r',  # Red (high risk) to Green (low risk)
+                zmin=0,
+                zmax=100,
+                colorbar=dict(title="Risk Score", x=1.1)
+            ))
+            
+            # Update layout for California
+            fig_map.update_layout(
+                title="California Wildfire Risk Assessment",
+                xaxis_title="Longitude",
+                yaxis_title="Latitude",
+                height=600,
+                margin=dict(l=0, r=0, t=50, b=0)
+            )
+            
+            # Risk statistics
+            high_risk = np.sum(grid_data['risk_score'] >= threshold)
+            total = len(grid_data)
+            avg_risk = np.mean(grid_data['risk_score'])
+            
+            stats_html = html.Div([
+                html.P(f"High Risk Areas: {high_risk}/{total} ({high_risk/total*100:.1f}%)"),
+                html.P(f"Average Risk: {avg_risk:.1f}"),
+                html.P(f"Max Risk: {np.max(grid_data['risk_score']):.1f}"),
+                html.P(f"Min Risk: {np.min(grid_data['risk_score']):.1f}"),
+                html.P(f"Data Source: Real Environmental Data", style={'color': 'green', 'fontWeight': 'bold'})
+            ])
+            
+            # Risk distribution
+            fig_dist = go.Figure()
+            fig_dist.add_trace(go.Histogram(
+                x=grid_data['risk_score'],
+                nbinsx=20,
+                marker_color='lightcoral',
+                opacity=0.7
+            ))
+            
+            fig_dist.add_vline(x=threshold, line_dash="dash", line_color="red", 
+                              annotation_text=f"Threshold: {threshold}")
+            
+            fig_dist.update_layout(
+                title="Risk Score Distribution",
+                xaxis_title="Risk Score",
+                yaxis_title="Frequency",
+                height=300
+            )
+            
+            return fig_map, stats_html, fig_dist
+            
+        except Exception as e:
+            print(f"Error updating real risk map: {e}")
+            return go.Figure(), f"Error: {str(e)}", go.Figure()
+    
+    def update_demo_risk_map(model_type, threshold):
+        """Update risk map using demo data (fallback)."""
         if model_type not in DEMO_MODELS or DEMO_DATA is None:
             return go.Figure(), "No data available", go.Figure()
         
@@ -165,7 +270,8 @@ def register_callbacks(app):
             html.P(f"High Risk Areas: {high_risk}/{total} ({high_risk/total*100:.1f}%)"),
             html.P(f"Average Risk: {avg_risk:.1f}"),
             html.P(f"Max Risk: {np.max(predictions):.1f}"),
-            html.P(f"Min Risk: {np.min(predictions):.1f}")
+            html.P(f"Min Risk: {np.min(predictions):.1f}"),
+            html.P(f"Data Source: Demo Data", style={'color': 'orange', 'fontWeight': 'bold'})
         ])
         
         # Risk distribution
@@ -299,16 +405,14 @@ def register_callbacks(app):
                 return go.Figure()
             importance_df = model.feature_importance.copy()
         elif model_type == 'xgb':
-            # XGBoost has methods to get feature importance
+            # XGBoost has get_feature_importance_dict method
             if not hasattr(model, 'get_feature_importance_dict'):
                 return go.Figure()
             
-            # Get feature importance as dictionary
             importance_dict = model.get_feature_importance_dict()
             if not importance_dict:
                 return go.Figure()
             
-            # Convert to DataFrame format
             importance_df = pd.DataFrame({
                 'feature': list(importance_dict.keys()),
                 'importance': list(importance_dict.values())
@@ -316,22 +420,23 @@ def register_callbacks(app):
         else:
             return go.Figure()
         
-        # Sort by importance
         importance_df = importance_df.sort_values('importance', ascending=True)
         
+        # Create horizontal bar chart
         fig = go.Figure()
         fig.add_trace(go.Bar(
             y=importance_df['feature'],
             x=importance_df['importance'],
             orientation='h',
-            marker_color='lightblue'
+            marker_color='lightcoral'
         ))
         
         fig.update_layout(
-            title=f"Feature Importance - {model_type.upper()} Model",
-            xaxis_title="Importance Score",
-            yaxis_title="Features",
-            height=500
+            title=f'{model_type.upper()} Feature Importance',
+            xaxis_title='Importance Score',
+            yaxis_title='Features',
+            height=500,
+            showlegend=False
         )
         
         return fig
@@ -486,7 +591,7 @@ def register_callbacks(app):
     
     # Prediction Interface Callback
     @app.callback(
-        Output('prediction-results', 'children'),
+        Output('manual-prediction-results', 'children'),
         [Input('predict-button', 'n_clicks')],
         [State('temp-input', 'value'),
          State('humidity-input', 'value'),
@@ -552,3 +657,164 @@ def register_callbacks(app):
         ])
         
         return results
+
+    # Make Predictions Callback
+    @app.callback(
+        Output('location-prediction-results', 'children'),
+        [Input('calculate-risk-btn', 'n_clicks')],
+        [State('pred-lat', 'value'),
+         State('pred-lon', 'value')]
+    )
+    def calculate_risk_prediction(n_clicks, lat, lon):
+        """Calculate risk prediction for a specific location."""
+        if n_clicks == 0 or lat is None or lon is None:
+            return "Enter coordinates and click 'Calculate Risk' to get started."
+        
+        try:
+            if DATA_INTEGRATION:
+                # Use real data integration
+                risk_data = DATA_INTEGRATION.calculate_comprehensive_risk(lat, lon)
+                
+                if 'error' in risk_data:
+                    return html.Div([
+                        html.H4("Error", style={'color': 'red'}),
+                        html.P(f"Could not calculate risk: {risk_data['error']}")
+                    ])
+                
+                return html.Div([
+                    html.H4(f"Risk Assessment for ({lat:.4f}, {lon:.4f})", style={'color': '#2E8B57'}),
+                    html.Div([
+                        html.Div([
+                            html.H5("Overall Risk", style={'color': '#FF6B35'}),
+                            html.P(f"Risk Score: {risk_data['total_risk']:.1f}/100"),
+                            html.P(f"Risk Category: {risk_data['risk_category']}", 
+                                   style={'fontWeight': 'bold', 'color': get_risk_color(risk_data['risk_category'])})
+                        ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'}),
+                        
+                        html.Div([
+                            html.H5("Risk Factors", style={'color': '#2E8B57'}),
+                            html.P(f"Weather: {risk_data['risk_factors']['weather_risk']*100:.1f}%"),
+                            html.P(f"Vegetation: {risk_data['risk_factors']['vegetation_risk']*100:.1f}%"),
+                            html.P(f"Topography: {risk_data['risk_factors']['topography_risk']*100:.1f}%"),
+                            html.P(f"Fire History: {risk_data['risk_factors']['fire_history_risk']*100:.1f}%")
+                        ], style={'width': '48%', 'display': 'inline-block', 'verticalAlign': 'top'})
+                    ]),
+                    html.P(f"Data Source: Real Environmental Data", style={'color': 'green', 'fontWeight': 'bold', 'marginTop': '20px'})
+                ])
+            else:
+                # Use demo models
+                return html.Div([
+                    html.H4(f"Demo Prediction for ({lat:.4f}, {lon:.4f})", style={'color': '#2E8B57'}),
+                    html.P("Demo mode: Using synthetic data for demonstration"),
+                    html.P(f"Estimated Risk: {np.random.randint(20, 80)}/100"),
+                    html.P("Data Source: Demo Data", style={'color': 'orange', 'fontWeight': 'bold'})
+                ])
+                
+        except Exception as e:
+            return html.Div([
+                html.H4("Error", style={'color': 'red'}),
+                html.P(f"Could not calculate risk: {str(e)}")
+            ])
+    
+    # Environmental Monitoring Callbacks
+    @app.callback(
+        [Output('weather-display', 'children'),
+         Output('satellite-display', 'children'),
+         Output('topography-display', 'children'),
+         Output('fire-history-display', 'children')],
+        [Input('update-env-data-btn', 'n_clicks'),
+         Input('monitor-location', 'value')],
+        [State('custom-lat', 'value'),
+         State('custom-lon', 'value')]
+    )
+    def update_environmental_data(n_clicks, location, custom_lat, custom_lon):
+        """Update environmental monitoring data for selected location."""
+        if n_clicks == 0:
+            return "Click 'Update Data' to load environmental information.", "", "", ""
+        
+        try:
+            # Get coordinates based on selection
+            if location == 'custom' and custom_lat is not None and custom_lon is not None:
+                lat, lon = custom_lat, custom_lon
+            else:
+                # Predefined locations
+                locations = {
+                    'sf': (37.7749, -122.4194),
+                    'la': (34.0522, -118.2437),
+                    'sd': (32.7157, -117.1611),
+                    'sac': (38.5816, -121.4944)
+                }
+                lat, lon = locations.get(location, (37.7749, -122.4194))
+            
+            if DATA_INTEGRATION:
+                # Get real environmental data
+                weather = DATA_INTEGRATION.get_weather_data(lat, lon)
+                satellite = DATA_INTEGRATION.get_satellite_data(lat, lon)
+                topography = DATA_INTEGRATION.get_topographical_data(lat, lon)
+                fire_history = DATA_INTEGRATION.get_historical_fire_data(lat, lon)
+                
+                # Weather display
+                weather_html = html.Div([
+                    html.P(f"Temperature: {weather['temperature']:.1f}°C"),
+                    html.P(f"Humidity: {weather['humidity']:.1f}%"),
+                    html.P(f"Wind Speed: {weather['wind_speed']:.1f} m/s"),
+                    html.P(f"Pressure: {weather['pressure']:.0f} hPa"),
+                    html.P(f"Fire Weather Index: {weather['fire_weather_index']:.1f}/100"),
+                    html.P(f"Last Updated: {weather['timestamp'].strftime('%Y-%m-%d %H:%M')}")
+                ])
+                
+                # Satellite display
+                satellite_html = html.Div([
+                    html.P(f"NDVI: {satellite['ndvi']['mean']:.3f}"),
+                    html.P(f"NBR: {satellite['nbr']['mean']:.3f}"),
+                    html.P(f"NDWI: {satellite['ndwi']['mean']:.3f}"),
+                    html.P(f"Images Available: {satellite['image_count']}"),
+                    html.P(f"Cloud Cover: {satellite['cloud_cover']:.1f}%"),
+                    html.P(f"Last Update: {satellite['last_update']}")
+                ])
+                
+                # Topography display
+                topography_html = html.Div([
+                    html.P(f"Elevation: {topography['elevation']:.0f} m"),
+                    html.P(f"Slope: {topography['slope']:.1f}°"),
+                    html.P(f"Aspect: {topography['aspect']:.1f}°"),
+                    html.P(f"Roughness: {topography['roughness']:.1f} m"),
+                    html.P(f"Elevation Factor: {topography['elevation_factor']:.3f}"),
+                    html.P(f"Slope Factor: {topography['slope_factor']:.3f}")
+                ])
+                
+                # Fire history display
+                fire_history_html = html.Div([
+                    html.P(f"Fire Frequency: {fire_history['fire_frequency']:.3f}"),
+                    html.P(f"Last Fire Year: {fire_history['last_fire_year']}"),
+                    html.P(f"Years Since Fire: {fire_history['years_since_fire']}"),
+                    html.P(f"Fire Severity: {fire_history['fire_severity']:.3f}"),
+                    html.P(f"History Score: {fire_history['fire_history_score']:.3f}")
+                ])
+                
+                return weather_html, satellite_html, topography_html, fire_history_html
+                
+            else:
+                # Demo data
+                demo_html = html.Div([
+                    html.P("Demo Mode: Using synthetic environmental data"),
+                    html.P("Enable real data integration for live monitoring")
+                ])
+                
+                return demo_html, demo_html, demo_html, demo_html
+                
+        except Exception as e:
+            error_html = html.Div([
+                html.P(f"Error loading data: {str(e)}", style={'color': 'red'})
+            ])
+            return error_html, error_html, error_html, error_html
+
+def get_risk_color(category):
+    """Get color for risk category."""
+    colors = {
+        'Low': '#00FF00',
+        'Moderate': '#FFFF00', 
+        'High': '#FFA500',
+        'Extreme': '#FF0000'
+    }
+    return colors.get(category, '#666666')
