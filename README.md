@@ -197,6 +197,29 @@ python test_env.py
 4. Add tests
 5. Submit a pull request
 
+## Scientific Foundation
+
+### Modern Research (2020-2024)
+This system implements cutting-edge wildfire prediction research:
+
+- **Machine Learning Applications**: Based on Jain et al. (2020) comprehensive review of ML in wildfire science
+- **Deep Learning**: Implements approaches from Prapas et al. (2023) and Huot et al. (2022) for spatiotemporal modeling
+- **Satellite Integration**: Following Chuvieco et al. (2023) and Ban et al. (2020) for real-time monitoring
+- **Climate Adaptation**: Incorporates Abatzoglou et al. (2021) and Williams et al. (2023) climate projections
+
+### Key Innovations
+- **Modern Fire Indices**: Vapor Pressure Deficit (VPD) and Hot-Dry-Windy Index (HDW) for improved accuracy
+- **ML-based Fire Potential**: Advanced algorithms that learn complex nonlinear relationships
+- **Multi-source Data Fusion**: Combines satellite, weather, and social vulnerability data
+- **Deep Learning Models**: ConvLSTM for capturing spatiotemporal fire spread patterns
+
+### Historical Baselines
+We maintain implementations of classical models for comparison and validation:
+- Canadian FWI (Van Wagner, 1987) - Industry standard for decades
+- KBDI drought index (Keetch & Byram, 1968) - Fundamental drought metric
+- Nelson dead fuel moisture (2000) - Physical moisture modeling
+- Rothermel spread model (1972) - Fire behavior foundations
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -205,10 +228,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 This system demonstrates:
 - **Full-stack development** (ML, API, Dashboard, Data Integration)
-- **Data science** (satellite imagery, environmental monitoring)
+- **Modern data science** (2020-2024 research, satellite imagery, environmental monitoring)
 - **Production deployment** (scalable architecture, testing, documentation)
 - **Code quality** (clean code, comprehensive testing, user experience)
+- **Scientific rigor** (peer-reviewed research, validated algorithms)
 
 ---
 
-*Built with Python, Dash, FastAPI, TensorFlow, and real satellite data*
+*Built with Python, Dash, FastAPI, TensorFlow, and real satellite data using the latest wildfire science research*
