@@ -16,11 +16,11 @@ try:
     env_file = Path('.env')
     if env_file.exists():
         load_dotenv(env_file)
-        print(f"✅ Loaded environment variables from {env_file}")
+        print(f"Loaded environment variables from {env_file}")
     else:
-        print("⚠️  No .env file found. Run: python create_env_file.py")
+        print("No .env file found. Run: python create_env_file.py")
 except ImportError:
-    print("⚠️  python-dotenv not installed. Install with: pip install python-dotenv")
+    print("python-dotenv not installed. Install with: pip install python-dotenv")
 
 # API Keys and External Services
 # Replace these with your actual API keys from the respective services
@@ -158,18 +158,18 @@ def validate_config() -> bool:
     api_keys = config['api_keys']
     
     if not api_keys['openweather'] or api_keys['openweather'] == 'your_openweather_api_key_here':
-        print("⚠️  OpenWeather API key not configured")
+        print("OpenWeather API key not configured")
         return False
     
     if not api_keys['neon'] or api_keys['neon'] == 'your_neon_api_token_here':
-        print("⚠️  NEON API token not configured")
+        print("NEON API token not configured")
         return False
     
-    print("✅ All required API keys are configured")
+    print("All required API keys are configured")
     return True
 
 if __name__ == "__main__":
-    print("🔧 Configuration Template")
+    print("Configuration Template")
     print("=" * 50)
     print("This is a template file. To use it:")
     print("1. Copy this file to 'config.py'")
@@ -178,6 +178,6 @@ if __name__ == "__main__":
     print()
     
     if validate_config():
-        print("🎉 Configuration is valid!")
+        print("Configuration is valid!")
     else:
-        print("⚠️  Please configure your API keys before running the system")
+        print("Please configure your API keys before running the system")
