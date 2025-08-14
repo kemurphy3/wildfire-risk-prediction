@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv
+
+# Data files
+data/raw/
+data/processed/
+data/cache/
+*.csv
+*.parquet
+*.nc
+*.tif
+*.geojson
+
+# Model files
+*.pkl
+*.h5
+*.pt
+*.pth
+models/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+.coverage
+htmlcov/
+*.cover
+.pytest_cache/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Earth Engine
+.ee_token
+ee_cache/
+
+# NEON data cache
+neon_cache/
+
+# Secrets and credentials
+credentials/
+config/secrets.yaml
