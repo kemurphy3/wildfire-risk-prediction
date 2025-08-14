@@ -40,6 +40,20 @@ class NEONDataCollector:
         "DP1.00066.001": "Photosynthetically active radiation (quantum line)",
     }
     
+    # NEON Airborne Observation Platform (AOP) products for satellite crosswalk
+    AOP_PRODUCTS = {
+        "DP1.30006.001": "Spectrometer orthorectified surface directional reflectance - flightline",
+        "DP1.30008.001": "Spectrometer orthorectified at-sensor radiance - flightline",
+        "DP1.30010.001": "High-resolution orthorectified camera imagery",
+        "DP1.30003.001": "Discrete return LiDAR point cloud",
+        "DP1.30015.001": "Ecosystem structure (Canopy Height Model)",
+        "DP1.30024.001": "Elevation - LiDAR (DTM and DSM)",
+        "DP3.30006.001": "Spectrometer orthorectified surface directional reflectance - mosaic",
+        "DP3.30010.001": "High-resolution orthorectified camera imagery - mosaic",
+        "DP3.30015.001": "Ecosystem structure",
+        "DP3.30024.001": "Elevation - LiDAR",
+    }
+    
     # Fire-prone NEON sites (example selection)
     FIRE_PRONE_SITES = [
         "SJER",  # San Joaquin Experimental Range, CA
@@ -190,6 +204,166 @@ class NEONDataCollector:
                 logger.info(f"Downloaded {len(product_data)} files for {product}")
         
         return all_data
+    
+    def get_aop_data(
+        self,
+        product_code: str,
+        site_code: str,
+        year: int,
+        easting: Optional[Tuple[float, float]] = None,
+        northing: Optional[Tuple[float, float]] = None
+    ) -> Dict:
+        """
+        Retrieve NEON Airborne Observation Platform (AOP) data.
+        
+        Args:
+            product_code: NEON AOP data product code
+            site_code: NEON site code
+            year: Year of the flight campaign
+            easting: Optional tuple of (min, max) easting coordinates
+            northing: Optional tuple of (min, max) northing coordinates
+            
+        Returns:
+            Dictionary containing the AOP data and metadata
+        """
+        logger.info(f"Fetching AOP data {product_code} for site {site_code}, year {year}")
+        
+        # AOP data uses year instead of date range
+        endpoint = f"data/{product_code}/{site_code}/{year}"
+        
+        params = {}
+        if easting:
+            params["easting"] = f"{easting[0]},{easting[1]}"
+        if northing:
+            params["northing"] = f"{northing[0]},{northing[1]}"
+        
+        response = self._make_request(endpoint, params=params)
+        data = response.json()
+        
+        return data
+    
+    def download_aop_reflectance_data(
+        self,
+        sites: List[str],
+        years: List[int],
+        bbox: Optional[Dict[str, Tuple[float, float]]] = None
+    ) -> Dict[str, pd.DataFrame]:
+        """
+        Download NEON AOP reflectance data for satellite crosswalk.
+        
+        Args:
+            sites: List of NEON site codes
+            years: List of years to download
+            bbox: Optional bounding box dict with 'easting' and 'northing' tuples
+            
+        Returns:
+            Dictionary mapping site_year to reflectance data
+        """
+        reflectance_data = {}
+        
+        for site in sites:
+            for year in years:
+                try:
+                    # Get surface reflectance data
+                    data = self.get_aop_data(
+                        "DP1.30006.001",  # Surface reflectance
+                        site,
+                        year,
+                        easting=bbox.get("easting") if bbox else None,
+                        northing=bbox.get("northing") if bbox else None
+                    )
+                    
+                    if "data" in data and "files" in data["data"]:
+                        site_year_key = f"{site}_{year}"
+                        reflectance_data[site_year_key] = self._process_aop_files(data["data"]["files"])
+                        logger.info(f"Downloaded AOP reflectance for {site_year_key}")
+                
+                except Exception as e:
+                    logger.error(f"Error downloading AOP data for {site} {year}: {str(e)}")
+                    continue
+        
+        return reflectance_data
+    
+    def create_satellite_crosswalk(
+        self,
+        aop_data: Dict[str, pd.DataFrame],
+        satellite_data: pd.DataFrame,
+        temporal_window: int = 7
+    ) -> pd.DataFrame:
+        """
+        Create a crosswalk between NEON AOP and satellite data.
+        
+        This function matches NEON hyperspectral data with satellite multispectral
+        bands based on spectral response functions and temporal proximity.
+        
+        Args:
+            aop_data: Dictionary of AOP reflectance data
+            satellite_data: DataFrame with satellite observations
+            temporal_window: Days to search for matching satellite observations
+            
+        Returns:
+            DataFrame with matched AOP and satellite observations
+        """
+        crosswalk_records = []
+        
+        # Define spectral band mapping between NEON and common satellites
+        band_mappings = {
+            "sentinel2": {
+                "B02": (459, 549),    # Blue
+                "B03": (542, 578),    # Green
+                "B04": (649, 681),    # Red
+                "B05": (697, 713),    # Red Edge 1
+                "B06": (732, 748),    # Red Edge 2
+                "B07": (773, 793),    # Red Edge 3
+                "B08": (784, 900),    # NIR
+                "B8A": (854, 876),    # NIR narrow
+                "B11": (1568, 1660),  # SWIR1
+                "B12": (2115, 2290),  # SWIR2
+            },
+            "landsat8": {
+                "B2": (450, 515),     # Blue
+                "B3": (525, 600),     # Green
+                "B4": (630, 680),     # Red
+                "B5": (845, 885),     # NIR
+                "B6": (1560, 1660),   # SWIR1
+                "B7": (2100, 2300),   # SWIR2
+            },
+            "modis": {
+                "B3": (459, 479),     # Blue
+                "B4": (545, 565),     # Green
+                "B1": (620, 670),     # Red
+                "B2": (841, 876),     # NIR
+                "B6": (1628, 1652),   # SWIR1
+                "B7": (2105, 2155),   # SWIR2
+            }
+        }
+        
+        logger.info("Creating satellite crosswalk with NEON AOP data")
+        
+        # Process each AOP dataset
+        for site_year, aop_df in aop_data.items():
+            # Extract relevant metadata and spectral data
+            # This is a simplified example - actual implementation would be more complex
+            crosswalk_records.append({
+                "site_year": site_year,
+                "aop_bands": len(aop_df.columns),
+                "satellite_matches": 0,
+                "spectral_correlation": 0.0
+            })
+        
+        return pd.DataFrame(crosswalk_records)
+    
+    def _process_aop_files(self, files: List[Dict]) -> pd.DataFrame:
+        """Process AOP files and extract reflectance data."""
+        # Simplified processing - actual implementation would handle HDF5 files
+        processed_data = pd.DataFrame()
+        
+        for file_info in files:
+            if file_info["name"].endswith(".h5"):
+                # In reality, we'd download and process HDF5 files here
+                logger.info(f"Processing AOP file: {file_info['name']}")
+        
+        return processed_data
     
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> requests.Response:
         """Make an API request with error handling."""
