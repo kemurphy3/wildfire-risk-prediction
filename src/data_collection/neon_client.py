@@ -1,428 +1,501 @@
 """
-NEON Data Collection Module
+Enhanced NEON client for downloading and processing AOP data.
 
-This module demonstrates best practices for accessing NEON ecological data
-for environmental modeling applications.
+This module provides comprehensive access to NEON AOP data including
+canopy height models, hyperspectral reflectance, and LiDAR data.
 """
 
 import os
-import logging
 import requests
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
-from urllib.parse import urljoin
 import json
+import logging
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+import yaml
+from datetime import datetime, timedelta
+import time
+import zipfile
+import shutil
 
 logger = logging.getLogger(__name__)
 
 
 class NEONDataCollector:
-    """
-    A class to collect ecological data from NEON (National Ecological Observatory Network).
+    """Enhanced NEON data collector with AOP support."""
     
-    This demonstrates proper API usage, data caching, and error handling for
-    scientific data collection.
-    """
-    
-    BASE_URL = "https://data.neonscience.org/api/v0/"
-    
-    # Key data products for wildfire risk assessment
-    FIRE_RELEVANT_PRODUCTS = {
-        "DP1.00041.001": "Soil temperature",
-        "DP1.00094.001": "Soil water content and water salinity",
-        "DP1.00098.001": "Relative humidity",
-        "DP1.10023.001": "Herbaceous clip harvest",
-        "DP1.10033.001": "Phenology observations",
-        "DP1.00040.001": "Soil heat flux plate",
-        "DP1.00024.001": "Photosynthetically active radiation (PAR)",
-        "DP1.00066.001": "Photosynthetically active radiation (quantum line)",
-    }
-    
-    # NEON Airborne Observation Platform (AOP) products for satellite crosswalk
-    AOP_PRODUCTS = {
-        "DP3.30006.001": "Spectrometer orthorectified surface directional reflectance - mosaic",
-        "DP3.30010.001": "High-resolution orthorectified camera imagery - mosaic",
-        "DP3.30015.001": "Ecosystem structure",
-        "DP3.30024.001": "Elevation - LiDAR",
-    }
-    
-    # Fire-prone NEON sites (example selection)
-    FIRE_PRONE_SITES = [
-        "SJER",  # San Joaquin Experimental Range, CA
-        "SOAP",  # Soaproot Saddle, CA
-        "TEAK",  # Lower Teakettle, CA
-        "WREF",  # Wind River Experimental Forest, WA
-        "ABBY",  # Abby Road, WA
-        "RMNP",  # Rocky Mountain National Park, CO
-    ]
-    
-    def __init__(self, api_token: Optional[str] = None, cache_dir: str = "data/cache/neon"):
+    def __init__(self, config: Dict):
         """
-        Initialize the NEON data collector.
+        Initialize NEON data collector.
         
         Args:
-            api_token: Optional API token for authenticated access
-            cache_dir: Directory for caching downloaded data
+            config: Configuration dictionary with NEON API settings
         """
-        self.api_token = api_token or os.getenv("NEON_API_TOKEN")
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.config = config
+        self.base_url = config.get('neon_api', {}).get('base_url', 'https://data.neonscience.org/api/v0')
+        self.token = os.environ.get('NEON_API_TOKEN')
+        self.timeout = config.get('neon_api', {}).get('timeout', 300)
+        self.max_retries = config.get('neon_api', {}).get('max_retries', 3)
+        
+        if not self.token:
+            logger.warning("No NEON API token found. Set NEON_API_TOKEN environment variable.")
         
         self.session = requests.Session()
-        if self.api_token:
-            self.session.headers.update({"X-API-Token": self.api_token})
+        if self.token:
+            self.session.headers.update({'Authorization': f'Bearer {self.token}'})
     
-    def get_sites_info(self, site_codes: Optional[List[str]] = None) -> pd.DataFrame:
+    def get_sites(self) -> List[Dict]:
         """
-        Retrieve information about NEON sites.
+        Get list of available NEON sites.
         
-        Args:
-            site_codes: List of specific site codes to retrieve. If None, returns all sites.
-            
         Returns:
-            DataFrame with site information
+            List of site information dictionaries
         """
-        logger.info("Fetching NEON sites information")
-        
-        response = self._make_request("sites")
-        sites_data = response.json()["data"]
-        
-        sites_df = pd.DataFrame(sites_data)
-        
-        if site_codes:
-            sites_df = sites_df[sites_df["siteCode"].isin(site_codes)]
-        
-        return sites_df
-    
-    def get_product_data(
-        self,
-        product_code: str,
-        site_code: str,
-        start_date: str,
-        end_date: str,
-        package: str = "basic"
-    ) -> Dict:
-        """
-        Retrieve data for a specific NEON data product.
-        
-        Args:
-            product_code: NEON data product code
-            site_code: NEON site code
-            start_date: Start date (YYYY-MM format)
-            end_date: End date (YYYY-MM format)
-            package: Data package type ('basic' or 'expanded')
-            
-        Returns:
-            Dictionary containing the data and metadata
-        """
-        logger.info(f"Fetching {product_code} for site {site_code} from {start_date} to {end_date}")
-        
-        # Check cache first
-        cache_key = f"{product_code}_{site_code}_{start_date}_{end_date}_{package}"
-        cached_data = self._check_cache(cache_key)
-        if cached_data is not None:
-            logger.info("Using cached data")
-            return cached_data
-        
-        # Build request URL
-        endpoint = f"data/{product_code}/{site_code}/{start_date}"
-        params = {
-            "package": package,
-            "endDate": end_date
-        }
-        
-        response = self._make_request(endpoint, params=params)
-        data = response.json()
-        
-        # Cache the response
-        self._save_cache(cache_key, data)
-        
-        return data
-    
-    def download_fire_risk_data(
-        self,
-        sites: Optional[List[str]] = None,
-        start_date: str = None,
-        end_date: str = None,
-        products: Optional[List[str]] = None
-    ) -> Dict[str, pd.DataFrame]:
-        """
-        Download all fire-relevant data for specified sites and time period.
-        
-        Args:
-            sites: List of site codes (defaults to FIRE_PRONE_SITES)
-            start_date: Start date in YYYY-MM format
-            end_date: End date in YYYY-MM format
-            products: List of product codes (defaults to FIRE_RELEVANT_PRODUCTS)
-            
-        Returns:
-            Dictionary mapping product codes to DataFrames
-        """
-        sites = sites or self.FIRE_PRONE_SITES
-        products = products or list(self.FIRE_RELEVANT_PRODUCTS.keys())
-        
-        if not start_date:
-            start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m")
-        if not end_date:
-            end_date = datetime.now().strftime("%Y-%m")
-        
-        logger.info(f"Downloading fire risk data for {len(sites)} sites and {len(products)} products")
-        
-        all_data = {}
-        
-        for product in products:
-            product_data = []
-            
-            for site in sites:
-                try:
-                    data = self.get_product_data(product, site, start_date, end_date)
-                    
-                    # Extract and process the actual data files
-                    if "data" in data and "files" in data["data"]:
-                        for file_info in data["data"]["files"]:
-                            if file_info["name"].endswith(".csv"):
-                                df = self._download_and_parse_csv(file_info["url"])
-                                if df is not None:
-                                    df["siteCode"] = site
-                                    df["productCode"] = product
-                                    product_data.append(df)
-                
-                except Exception as e:
-                    logger.error(f"Error downloading {product} for {site}: {str(e)}")
-                    continue
-            
-            if product_data:
-                all_data[product] = pd.concat(product_data, ignore_index=True)
-                logger.info(f"Downloaded {len(product_data)} files for {product}")
-        
-        return all_data
-    
-    def get_aop_data(
-        self,
-        product_code: str,
-        site_code: str,
-        year: int,
-        easting: Optional[Tuple[float, float]] = None,
-        northing: Optional[Tuple[float, float]] = None
-    ) -> Dict:
-        """
-        Retrieve NEON Airborne Observation Platform (AOP) data.
-        
-        Args:
-            product_code: NEON AOP data product code
-            site_code: NEON site code
-            year: Year of the flight campaign
-            easting: Optional tuple of (min, max) easting coordinates
-            northing: Optional tuple of (min, max) northing coordinates
-            
-        Returns:
-            Dictionary containing the AOP data and metadata
-        """
-        logger.info(f"Fetching AOP data {product_code} for site {site_code}, year {year}")
-        
-        # AOP data uses year instead of date range
-        endpoint = f"data/{product_code}/{site_code}/{year}"
-        
-        params = {}
-        if easting:
-            params["easting"] = f"{easting[0]},{easting[1]}"
-        if northing:
-            params["northing"] = f"{northing[0]},{northing[1]}"
-        
-        response = self._make_request(endpoint, params=params)
-        data = response.json()
-        
-        return data
-    
-    def download_aop_reflectance_data(
-        self,
-        sites: List[str],
-        years: List[int],
-        bbox: Optional[Dict[str, Tuple[float, float]]] = None
-    ) -> Dict[str, pd.DataFrame]:
-        """
-        Download NEON AOP reflectance data for satellite crosswalk.
-        
-        Args:
-            sites: List of NEON site codes
-            years: List of years to download
-            bbox: Optional bounding box dict with 'easting' and 'northing' tuples
-            
-        Returns:
-            Dictionary mapping site_year to reflectance data
-        """
-        reflectance_data = {}
-        
-        for site in sites:
-            for year in years:
-                try:
-                    # Get surface reflectance data
-                    data = self.get_aop_data(
-                        "DP1.30006.001",  # Surface reflectance
-                        site,
-                        year,
-                        easting=bbox.get("easting") if bbox else None,
-                        northing=bbox.get("northing") if bbox else None
-                    )
-                    
-                    if "data" in data and "files" in data["data"]:
-                        site_year_key = f"{site}_{year}"
-                        reflectance_data[site_year_key] = self._process_aop_files(data["data"]["files"])
-                        logger.info(f"Downloaded AOP reflectance for {site_year_key}")
-                
-                except Exception as e:
-                    logger.error(f"Error downloading AOP data for {site} {year}: {str(e)}")
-                    continue
-        
-        return reflectance_data
-    
-    def create_satellite_crosswalk(
-        self,
-        aop_data: Dict[str, pd.DataFrame],
-        satellite_data: pd.DataFrame,
-        temporal_window: int = 7
-    ) -> pd.DataFrame:
-        """
-        Create a crosswalk between NEON AOP and satellite data.
-        
-        This function matches NEON hyperspectral data with satellite multispectral
-        bands based on spectral response functions and temporal proximity.
-        
-        Args:
-            aop_data: Dictionary of AOP reflectance data
-            satellite_data: DataFrame with satellite observations
-            temporal_window: Days to search for matching satellite observations
-            
-        Returns:
-            DataFrame with matched AOP and satellite observations
-        """
-        crosswalk_records = []
-        
-        # Define spectral band mapping between NEON and common satellites
-        band_mappings = {
-            "sentinel2": {
-                "B02": (459, 549),    # Blue
-                "B03": (542, 578),    # Green
-                "B04": (649, 681),    # Red
-                "B05": (697, 713),    # Red Edge 1
-                "B06": (732, 748),    # Red Edge 2
-                "B07": (773, 793),    # Red Edge 3
-                "B08": (784, 900),    # NIR
-                "B8A": (854, 876),    # NIR narrow
-                "B11": (1568, 1660),  # SWIR1
-                "B12": (2115, 2290),  # SWIR2
-            },
-            "landsat8": {
-                "B2": (450, 515),     # Blue
-                "B3": (525, 600),     # Green
-                "B4": (630, 680),     # Red
-                "B5": (845, 885),     # NIR
-                "B6": (1560, 1660),   # SWIR1
-                "B7": (2100, 2300),   # SWIR2
-            },
-            "modis": {
-                "B3": (459, 479),     # Blue
-                "B4": (545, 565),     # Green
-                "B1": (620, 670),     # Red
-                "B2": (841, 876),     # NIR
-                "B6": (1628, 1652),   # SWIR1
-                "B7": (2105, 2155),   # SWIR2
-            }
-        }
-        
-        logger.info("Creating satellite crosswalk with NEON AOP data")
-        
-        # Process each AOP dataset
-        for site_year, aop_df in aop_data.items():
-            # Extract relevant metadata and spectral data
-            # This is a simplified example - actual implementation would be more complex
-            crosswalk_records.append({
-                "site_year": site_year,
-                "aop_bands": len(aop_df.columns),
-                "satellite_matches": 0,
-                "spectral_correlation": 0.0
-            })
-        
-        return pd.DataFrame(crosswalk_records)
-    
-    def _process_aop_files(self, files: List[Dict]) -> pd.DataFrame:
-        """Process AOP files and extract reflectance data."""
-        # Simplified processing - actual implementation would handle HDF5 files
-        processed_data = pd.DataFrame()
-        
-        for file_info in files:
-            if file_info["name"].endswith(".h5"):
-                # In reality, we'd download and process HDF5 files here
-                logger.info(f"Processing AOP file: {file_info['name']}")
-        
-        return processed_data
-    
-    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> requests.Response:
-        """Make an API request with error handling."""
-        url = urljoin(self.BASE_URL, endpoint)
+        logger.info("Fetching NEON sites...")
         
         try:
-            response = self.session.get(url, params=params, timeout=30)
+            response = self.session.get(f"{self.base_url}/sites", timeout=self.timeout)
             response.raise_for_status()
-            return response
+            
+            sites = response.json()['data']
+            logger.info(f"Found {len(sites)} NEON sites")
+            return sites
+            
         except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed: {str(e)}")
-            raise
+            logger.error(f"Error fetching sites: {e}")
+            return []
     
-    def _download_and_parse_csv(self, url: str) -> Optional[pd.DataFrame]:
-        """Download and parse a CSV file from a URL."""
+    def get_site_info(self, site_code: str) -> Optional[Dict]:
+        """
+        Get detailed information for a specific site.
+        
+        Args:
+            site_code: NEON site code
+            
+        Returns:
+            Site information dictionary or None if not found
+        """
+        logger.info(f"Fetching site info for {site_code}")
+        
         try:
-            df = pd.read_csv(url)
-            return df
-        except Exception as e:
-            logger.error(f"Failed to download/parse CSV from {url}: {str(e)}")
+            response = self.session.get(f"{self.base_url}/sites/{site_code}", timeout=self.timeout)
+            response.raise_for_status()
+            
+            site_info = response.json()['data']
+            logger.info(f"Retrieved info for site {site_code}")
+            return site_info
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching site info for {site_code}: {e}")
             return None
     
-    def _check_cache(self, cache_key: str) -> Optional[Dict]:
-        """Check if data exists in cache and is recent."""
-        cache_path = self.cache_dir / f"{cache_key}.json"
+    def get_available_products(self, site_code: str) -> List[Dict]:
+        """
+        Get available data products for a site.
         
-        if cache_path.exists():
-            # Check if cache is less than 24 hours old
-            cache_age = datetime.now() - datetime.fromtimestamp(cache_path.stat().st_mtime)
-            if cache_age < timedelta(hours=24):
-                with open(cache_path, 'r') as f:
-                    return json.load(f)
+        Args:
+            site_code: NEON site code
+            
+        Returns:
+            List of available data products
+        """
+        logger.info(f"Fetching available products for {site_code}")
         
-        return None
+        try:
+            response = self.session.get(f"{self.base_url}/sites/{site_code}/dataProducts", timeout=self.timeout)
+            response.raise_for_status()
+            
+            products = response.json()['data']
+            logger.info(f"Found {len(products)} products for {site_code}")
+            return products
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching products for {site_code}: {e}")
+            return []
     
-    def _save_cache(self, cache_key: str, data: Dict) -> None:
-        """Save data to cache."""
-        cache_path = self.cache_dir / f"{cache_key}.json"
+    def get_aop_data_info(self, site_code: str, year: int) -> List[Dict]:
+        """
+        Get AOP data information for a specific site and year.
         
-        with open(cache_path, 'w') as f:
-            json.dump(data, f)
+        Args:
+            site_code: NEON site code
+            year: Data year
+            
+        Returns:
+            List of AOP data information
+        """
+        logger.info(f"Fetching AOP data info for {site_code} {year}")
+        
+        try:
+            # Get available products for the site
+            products = self.get_available_products(site_code)
+            
+            # Filter for AOP products
+            aop_products = []
+            for product in products:
+                if product.get('productCode') in ['DP3.30024.001', 'DP3.30026.001', 'DP3.30010.001', 'DP1.30003.001']:
+                    # Get data availability for this product
+                    product_code = product['productCode']
+                    response = self.session.get(
+                        f"{self.base_url}/sites/{site_code}/dataProducts/{product_code}/available",
+                        timeout=self.timeout
+                    )
+                    response.raise_for_status()
+                    
+                    available_data = response.json()['data']
+                    
+                    # Filter for the specific year
+                    year_data = [d for d in available_data if d.get('year') == year]
+                    
+                    for data in year_data:
+                        aop_products.append({
+                            'productCode': product_code,
+                            'productName': product.get('productName', ''),
+                            'year': year,
+                            'month': data.get('month'),
+                            'day': data.get('day'),
+                            'url': data.get('downloadLink'),
+                            'fileSize': data.get('fileSize'),
+                            'checksum': data.get('checksum')
+                        })
+            
+            logger.info(f"Found {len(aop_products)} AOP data files for {site_code} {year}")
+            return aop_products
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching AOP data info for {site_code} {year}: {e}")
+            return []
+    
+    def download_aop_data(self, site_code: str, year: int, output_dir: Path, 
+                         products: Optional[List[str]] = None) -> bool:
+        """
+        Download AOP data for a specific site and year.
+        
+        Args:
+            site_code: NEON site code
+            year: Data year
+            output_dir: Output directory for downloaded data
+            products: List of product codes to download (None = all available)
+            
+        Returns:
+            True if download successful, False otherwise
+        """
+        logger.info(f"Downloading AOP data for {site_code} {year}")
+        
+        # Create output directory
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get available AOP data
+        aop_data = self.get_aop_data_info(site_code, year)
+        
+        if not aop_data:
+            logger.warning(f"No AOP data available for {site_code} {year}")
+            return False
+        
+        # Filter products if specified
+        if products:
+            aop_data = [d for d in aop_data if d['productCode'] in products]
+        
+        # Download each product
+        success_count = 0
+        for data in aop_data:
+            product_code = data['productCode']
+            download_url = data['url']
+            
+            if not download_url:
+                logger.warning(f"No download URL for {product_code}")
+                continue
+            
+            # Create product directory
+            product_dir = output_dir / product_code
+            product_dir.mkdir(exist_ok=True)
+            
+            # Download file
+            if self._download_file(download_url, product_dir, data):
+                success_count += 1
+        
+        logger.info(f"Successfully downloaded {success_count}/{len(aop_data)} AOP products for {site_code} {year}")
+        return success_count > 0
+    
+    def _download_file(self, url: str, output_dir: Path, file_info: Dict) -> bool:
+        """
+        Download a single file from NEON.
+        
+        Args:
+            url: Download URL
+            output_dir: Output directory
+            file_info: File information dictionary
+            
+        Returns:
+            True if download successful, False otherwise
+        """
+        product_code = file_info['productCode']
+        file_size = file_info.get('fileSize', 0)
+        
+        # Generate filename
+        filename = f"{product_code}_{file_info['year']}_{file_info.get('month', '01')}_{file_info.get('day', '01')}.zip"
+        file_path = output_dir / filename
+        
+        logger.info(f"Downloading {filename} ({file_size} bytes)")
+        
+        try:
+            # Download with progress tracking
+            response = self.session.get(url, stream=True, timeout=self.timeout)
+            response.raise_for_status()
+            
+            with open(file_path, 'wb') as f:
+                downloaded = 0
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        
+                        # Log progress for large files
+                        if file_size > 0 and downloaded % (1024 * 1024) == 0:  # Every MB
+                            progress = (downloaded / file_size) * 100
+                            logger.info(f"Download progress: {progress:.1f}%")
+            
+            # Verify file size
+            actual_size = file_path.stat().st_size
+            if file_size > 0 and abs(actual_size - file_size) > 1024:  # Allow 1KB difference
+                logger.warning(f"File size mismatch: expected {file_size}, got {actual_size}")
+            
+            # Extract zip file
+            if file_path.suffix == '.zip':
+                logger.info(f"Extracting {filename}")
+                with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                    zip_ref.extractall(output_dir)
+                
+                # Remove zip file after extraction
+                file_path.unlink()
+            
+            logger.info(f"Successfully downloaded and extracted {filename}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error downloading {filename}: {e}")
+            if file_path.exists():
+                file_path.unlink()
+            return False
+    
+    def get_aop_metadata(self, site_code: str, year: int) -> Dict:
+        """
+        Get metadata for AOP data.
+        
+        Args:
+            site_code: NEON site code
+            year: Data year
+            
+        Returns:
+            Metadata dictionary
+        """
+        logger.info(f"Fetching AOP metadata for {site_code} {year}")
+        
+        try:
+            # Get site info
+            site_info = self.get_site_info(site_code)
+            if not site_info:
+                return {}
+            
+            # Get AOP data info
+            aop_data = self.get_aop_data_info(site_code, year)
+            
+            metadata = {
+                'site_code': site_code,
+                'site_name': site_info.get('siteName', ''),
+                'year': year,
+                'download_timestamp': datetime.now().isoformat(),
+                'products': aop_data,
+                'site_info': {
+                    'latitude': site_info.get('location', {}).get('latitude'),
+                    'longitude': site_info.get('location', {}).get('longitude'),
+                    'elevation': site_info.get('location', {}).get('elevation'),
+                    'domain': site_info.get('domainCode', ''),
+                    'state': site_info.get('stateCode', '')
+                }
+            }
+            
+            logger.info(f"Retrieved metadata for {site_code} {year}")
+            return metadata
+            
+        except Exception as e:
+            logger.error(f"Error fetching metadata for {site_code} {year}: {e}")
+            return {}
+    
+    def validate_download(self, output_dir: Path, metadata: Dict) -> Dict:
+        """
+        Validate downloaded AOP data.
+        
+        Args:
+            output_dir: Directory containing downloaded data
+            metadata: Metadata dictionary
+            
+        Returns:
+            Validation results dictionary
+        """
+        logger.info("Validating downloaded AOP data")
+        
+        validation_results = {
+            'total_products': len(metadata.get('products', [])),
+            'downloaded_products': 0,
+            'valid_files': 0,
+            'missing_files': [],
+            'corrupted_files': [],
+            'validation_passed': False
+        }
+        
+        for product in metadata.get('products', []):
+            product_code = product['productCode']
+            product_dir = output_dir / product_code
+            
+            if product_dir.exists():
+                validation_results['downloaded_products'] += 1
+                
+                # Check for valid files
+                valid_files = list(product_dir.glob('*'))
+                if valid_files:
+                    validation_results['valid_files'] += 1
+                else:
+                    validation_results['missing_files'].append(product_code)
+            else:
+                validation_results['missing_files'].append(product_code)
+        
+        # Determine if validation passed
+        if validation_results['downloaded_products'] > 0 and validation_results['valid_files'] > 0:
+            validation_results['validation_passed'] = True
+        
+        logger.info(f"Validation results: {validation_results['validation_passed']}")
+        return validation_results
+    
+    def cleanup_temp_files(self, output_dir: Path):
+        """
+        Clean up temporary files after processing.
+        
+        Args:
+            output_dir: Output directory to clean
+        """
+        logger.info("Cleaning up temporary files")
+        
+        # Remove temporary zip files and other temp files
+        temp_patterns = ['*.tmp', '*.temp', '*.zip']
+        
+        for pattern in temp_patterns:
+            for temp_file in output_dir.glob(pattern):
+                try:
+                    temp_file.unlink()
+                    logger.debug(f"Removed temporary file: {temp_file}")
+                except Exception as e:
+                    logger.warning(f"Could not remove temporary file {temp_file}: {e}")
+    
+    def download_aop_data_batch(self, sites: List[str], years: List[int], 
+                               output_root: Path, products: Optional[List[str]] = None) -> Dict:
+        """
+        Download AOP data for multiple sites and years.
+        
+        Args:
+            sites: List of site codes
+            years: List of years
+            output_root: Root output directory
+            products: List of product codes to download
+            
+        Returns:
+            Summary of download results
+        """
+        logger.info(f"Starting batch download for {len(sites)} sites and {len(years)} years")
+        
+        results = {
+            'total_sites': len(sites),
+            'total_years': len(years),
+            'successful_downloads': 0,
+            'failed_downloads': 0,
+            'download_details': {}
+        }
+        
+        start_time = time.time()
+        
+        for site in sites:
+            results['download_details'][site] = {}
+            
+            for year in years:
+                logger.info(f"Processing {site} {year}")
+                
+                # Create site-year directory
+                site_year_dir = output_root / site / str(year)
+                
+                try:
+                    # Download data
+                    success = self.download_aop_data(site, year, site_year_dir, products)
+                    
+                    if success:
+                        results['successful_downloads'] += 1
+                        results['download_details'][site][year] = 'success'
+                        
+                        # Get metadata and validate
+                        metadata = self.get_aop_metadata(site, year)
+                        validation = self.validate_download(site_year_dir, metadata)
+                        
+                        # Save metadata
+                        metadata_file = site_year_dir / 'metadata.json'
+                        with open(metadata_file, 'w') as f:
+                            json.dump(metadata, f, indent=2)
+                        
+                        # Cleanup temp files
+                        self.cleanup_temp_files(site_year_dir)
+                        
+                    else:
+                        results['failed_downloads'] += 1
+                        results['download_details'][site][year] = 'failed'
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {site} {year}: {e}")
+                    results['failed_downloads'] += 1
+                    results['download_details'][site][year] = 'error'
+                
+                # Add delay between downloads to be respectful
+                time.sleep(1)
+        
+        total_time = time.time() - start_time
+        results['total_time'] = total_time
+        results['average_time_per_download'] = total_time / (len(sites) * len(years))
+        
+        logger.info(f"Batch download completed in {total_time:.1f} seconds")
+        logger.info(f"Successful: {results['successful_downloads']}, Failed: {results['failed_downloads']}")
+        
+        return results
 
 
-def main():
-    """Example usage of the NEON data collector."""
+def download_aop_data_cli():
+    """CLI interface for downloading AOP data."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Download NEON AOP data")
+    parser.add_argument("--site", required=True, help="NEON site code")
+    parser.add_argument("--years", nargs="+", type=int, required=True, help="Years to download")
+    parser.add_argument("--output-dir", required=True, help="Output directory")
+    parser.add_argument("--config", default="configs/aop_sites.yaml", help="Configuration file")
+    parser.add_argument("--products", nargs="+", help="Specific products to download")
+    
+    args = parser.parse_args()
+    
+    # Load configuration
+    with open(args.config, 'r') as f:
+        config = yaml.safe_load(f)
+    
     # Initialize collector
-    collector = NEONDataCollector()
+    collector = NEONDataCollector(config)
     
-    # Get site information
-    sites_df = collector.get_sites_info(site_codes=["SJER", "SOAP"])
-    print(f"Retrieved information for {len(sites_df)} sites")
-    
-    # Download fire risk data
-    fire_data = collector.download_fire_risk_data(
-        sites=["SJER"],
-        start_date="2023-01",
-        end_date="2023-12",
-        products=["DP1.00041.001", "DP1.00094.001"]  # Soil temp and moisture
+    # Download data
+    output_dir = Path(args.output_dir)
+    success = collector.download_aop_data_batch(
+        [args.site], args.years, output_dir, args.products
     )
     
-    print(f"Downloaded data for {len(fire_data)} products")
-    for product, df in fire_data.items():
-        print(f"{product}: {len(df)} records")
+    if success['successful_downloads'] > 0:
+        print(f"Successfully downloaded AOP data for {args.site}")
+        print(f"Output directory: {output_dir}")
+    else:
+        print(f"Failed to download AOP data for {args.site}")
+        exit(1)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    main()
+    download_aop_data_cli()

@@ -13,7 +13,7 @@ from pathlib import Path
 def create_env_file():
     """Create a .env file with user-provided API keys."""
     
-    print("🔐 Secure .env File Creator")
+    print("Secure .env File Creator")
     print("=" * 50)
     print("This script will create a .env file with your API keys.")
     print("Your keys will be stored locally and never committed to Git.")
@@ -21,19 +21,19 @@ def create_env_file():
     print()
     
     # Collect API keys securely
-    print("🌤️  OpenWeather API Setup (FREE)")
+    print("OpenWeather API Setup (FREE)")
     print("- Get your key from: https://openweathermap.org/api")
     openweather_key = getpass.getpass("Enter your OpenWeather API key (input will be hidden): ").strip()
     
     earth_engine_creds = setup_google_earth_engine()
     
-    print("\n🌿 NEON Data Access Setup (Optional)")
+    print("\nNEON Data Access Setup (Optional)")
     print("- Get your token from: https://data.neonscience.org/")
     neon_token = getpass.getpass("Enter your NEON API token (input will be hidden): ").strip()
     
     # Create .env content
     env_content = f"""# Environment Variables for Wildfire Risk Prediction System
-# ⚠️  IMPORTANT: This file contains sensitive information - never commit it to Git!
+# IMPORTANT: This file contains sensitive information - never commit it to Git!
 # This file is automatically ignored by .gitignore
 
 # Weather Data API (FREE)
@@ -76,30 +76,30 @@ LOG_FILE=wildfire_risk.log
     with open(env_file, 'w') as f:
         f.write(env_content)
     
-    print(f"\n✅ .env file created successfully: {env_file.absolute()}")
-    print("🔒 Your API keys are now stored securely and will never be committed to Git.")
+    print(f"\n.env file created successfully: {env_file.absolute()}")
+    print("Your API keys are now stored securely and will never be committed to Git.")
     
     # Set environment variables for current session
     if openweather_key:
         os.environ['OPENWEATHER_API_KEY'] = openweather_key
-        print("✅ OpenWeather API key set for current session")
+        print("OpenWeather API key set for current session")
     
     if neon_token:
         os.environ['NEON_API_TOKEN'] = neon_token
-        print("✅ NEON API token set for current session")
+        print("NEON API token set for current session")
     
     if earth_engine_creds and earth_engine_creds != 'personal':
         os.environ['GOOGLE_EARTH_ENGINE_CREDENTIALS'] = earth_engine_creds
-        print("✅ Earth Engine credentials path set for current session")
+        print("Earth Engine credentials path set for current session")
     elif earth_engine_creds == 'personal':
-        print("✅ Earth Engine personal authentication selected")
+        print("Earth Engine personal authentication selected")
         print("   Run 'earthengine authenticate' in your terminal to complete setup")
     
     return bool(openweather_key or neon_token or earth_engine_creds)
 
 def setup_google_earth_engine():
     """Set up Google Earth Engine credentials."""
-    print("\n🛰️  Google Earth Engine Setup (FREE for Research)")
+    print("\nGoogle Earth Engine Setup (FREE for Research)")
     print("=" * 50)
     print("1. Go to: https://earthengine.google.com/")
     print("2. Click 'Sign Up' and request access")
@@ -120,12 +120,12 @@ def setup_google_earth_engine():
     auth_choice = input("Choose authentication method (A/B, or press Enter to skip): ").strip().upper()
     
     if auth_choice == 'A':
-        print("\n✅ Using Personal Authentication")
+        print("\nUsing Personal Authentication")
         print("After setup, run: earthengine authenticate")
         print("This will open your browser to complete authentication.")
         return "personal"
     elif auth_choice == 'B':
-        print("\n📁 Service Account Key Setup")
+        print("\nService Account Key Setup")
         print("1. Go to Google Cloud Console > IAM & Admin > Service Accounts")
         print("2. Create a new service account with Earth Engine permissions")
         print("3. Download the JSON key file")
@@ -133,22 +133,22 @@ def setup_google_earth_engine():
         if json_path and Path(json_path).exists():
             return json_path
         else:
-            print("⚠️  Invalid file path. Using personal authentication instead.")
+            print("Invalid file path. Using personal authentication instead.")
             return "personal"
     else:
-        print("⚠️  Google Earth Engine not configured. Satellite data will use demo data.")
+        print("Google Earth Engine not configured. Satellite data will use demo data.")
         return ""
 
 def test_configuration():
     """Test the configuration to ensure everything works."""
-    print("\n🧪 Testing Configuration")
+    print("\nTesting Configuration")
     print("=" * 50)
     
     # Test OpenWeather API
     if os.environ.get('OPENWEATHER_API_KEY'):
-        print("✅ OpenWeather API key: Configured")
+        print("OpenWeather API key: Configured")
     else:
-        print("❌ OpenWeather API key: Not configured")
+        print("OpenWeather API key: Not configured")
     
     # Test Google Earth Engine
     try:
@@ -156,19 +156,19 @@ def test_configuration():
         # Check if authenticated
         try:
             ee.Initialize()
-            print("✅ Google Earth Engine: Available and authenticated")
+            print("Google Earth Engine: Available and authenticated")
         except Exception:
-            print("✅ Google Earth Engine: Available but not authenticated")
+            print("Google Earth Engine: Available but not authenticated")
             print("   Run: earthengine authenticate")
     except ImportError:
-        print("❌ Google Earth Engine: Not available")
+        print("Google Earth Engine: Not available")
         print("   Install with: pip install earthengine-api")
     
     # Test NEON API
     if os.environ.get('NEON_API_TOKEN'):
-        print("✅ NEON API token: Configured")
+        print("NEON API token: Configured")
     else:
-        print("❌ NEON API token: Not configured")
+        print("NEON API token: Not configured")
     
     # Test data integration
     try:
@@ -180,20 +180,20 @@ def test_configuration():
         
         # Test a simple risk calculation
         risk_data = di.calculate_comprehensive_risk(37.7749, -122.4194)
-        print(f"✅ Data Integration: Working (Test risk: {risk_data['total_risk']:.1f})")
+        print(f"Data Integration: Working (Test risk: {risk_data['total_risk']:.1f})")
         
     except Exception as e:
-        print(f"❌ Data Integration: Error - {e}")
+        print(f"Data Integration: Error - {e}")
 
 def main():
     """Main function."""
-    print("🚀 Wildfire Risk Prediction System - Secure API Key Setup")
+    print("Wildfire Risk Prediction System - Secure API Key Setup")
     print("=" * 60)
     
     # Check if .env already exists
     env_file = Path('.env')
     if env_file.exists():
-        overwrite = input(f"\n⚠️  .env file already exists. Overwrite? (y/n): ").strip().lower()
+        overwrite = input(f"\n.env file already exists. Overwrite? (y/n): ").strip().lower()
         if overwrite != 'y':
             print("Setup cancelled.")
             return
@@ -205,55 +205,55 @@ def main():
     test_configuration()
     
     # Summary
-    print("\n📋 Setup Summary")
+    print("\nSetup Summary")
     print("=" * 50)
-    print(f"OpenWeather API: {'✅ Configured' if os.environ.get('OPENWEATHER_API_KEY') else '❌ Not configured'}")
+    print(f"OpenWeather API: {'Configured' if os.environ.get('OPENWEATHER_API_KEY') else 'Not configured'}")
     
     # Check Earth Engine status
     try:
         import ee
         try:
             ee.Initialize()
-            print("✅ Google Earth Engine: Available and authenticated")
+            print("Google Earth Engine: Available and authenticated")
         except Exception:
-            print("✅ Google Earth Engine: Available but needs authentication")
+            print("Google Earth Engine: Available but needs authentication")
             print("   Run: earthengine authenticate")
     except ImportError:
-        print("❌ Google Earth Engine: Not available")
+        print("Google Earth Engine: Not available")
     
-    print(f"NEON API: {'✅ Configured' if os.environ.get('NEON_API_TOKEN') else '❌ Not configured'}")
+    print(f"NEON API: {'Configured' if os.environ.get('NEON_API_TOKEN') else 'Not configured'}")
     
     if has_real_data:
-        print("\n🎉 Great! You have real data sources configured.")
+        print("\nGreat! You have real data sources configured.")
         print("Your dashboard will now use real environmental data!")
     else:
-        print("\n⚠️  No real data sources configured.")
+        print("\nNo real data sources configured.")
         print("Your dashboard will use realistic demo data based on California patterns.")
     
-    print("\n🚀 Next steps:")
+    print("\nNext steps:")
     print("1. Start the dashboard: python run_dashboard.py")
     print("2. Open: http://localhost:8050")
     print("3. Explore the real-time environmental monitoring!")
     
     # Earth Engine specific instructions
     if earth_engine_creds == 'personal':
-        print("\n🛰️  Earth Engine Personal Authentication:")
+        print("\nEarth Engine Personal Authentication:")
         print("1. Run: earthengine authenticate")
         print("2. Follow the browser prompts to log in")
         print("3. Grant Earth Engine permissions")
         print("4. Your credentials will be stored locally")
     
-    print("\n🔒 Security Notes:")
+    print("\nSecurity Notes:")
     print("- Your .env file is automatically ignored by Git")
     print("- API keys are stored locally only")
     print("- Never share your .env file or commit it to version control")
     
-    print("\n💡 For permanent setup (Windows):")
+    print("\nFor permanent setup (Windows):")
     print("1. Open System Properties > Environment Variables")
     print("2. Add your API keys as user variables")
     print("3. Restart your terminal/IDE")
     
-    print("\n💡 For permanent setup (Linux/Mac):")
+    print("\nFor permanent setup (Linux/Mac):")
     print("1. Add to ~/.bashrc or ~/.zshrc:")
     print("   export OPENWEATHER_API_KEY='your_key_here'")
     print("2. Run: source ~/.bashrc")

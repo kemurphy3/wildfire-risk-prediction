@@ -1,268 +1,211 @@
 # Wildfire Risk Prediction System
 
-A comprehensive, production-ready wildfire risk prediction system that combines satellite data, weather information, and machine learning to provide real-time fire risk assessments.
+A comprehensive wildfire risk prediction system that integrates real-time environmental data, satellite imagery, and machine learning models to provide accurate wildfire risk assessments.
 
-## System Status
+## 🌟 Key Features
 
-This system is complete and ready for production use.
+- **Real-Time Data Integration**: Live weather, satellite, and environmental data
+- **Advanced ML Models**: Random Forest, XGBoost, LightGBM, ConvLSTM, and Ensemble methods
+- **NEON AOP Crosswalk**: High-resolution airborne data integration for enhanced accuracy
+- **Interactive Dashboard**: Plotly Dash-based web interface with real-time updates
+- **Comprehensive API**: FastAPI backend with automated model training and validation
+- **Modern Research Integration**: Latest scientific findings (2020-2024) and algorithms
 
-- **Real-time satellite data** from Google Earth Engine
-- **Live weather integration** from OpenWeather
-- **Ecological monitoring** from NEON
-- **Machine learning models** (Random Forest, XGBoost, LightGBM, ConvLSTM, Ensemble)
-- **Interactive dashboard** with real-time risk assessment
-- **Professional API** for programmatic access
-- **Comprehensive testing** and validation
+## 🚀 NEON AOP Crosswalk System
 
-## What This System Does
+The system includes a sophisticated NEON AOP (Airborne Observation Platform) crosswalk framework that bridges high-resolution airborne data with satellite observations:
 
-This wildfire risk prediction system provides:
+### What is NEON AOP Crosswalk?
+- **High-Resolution Ground Truth**: 1-meter resolution airborne data (LiDAR, hyperspectral, RGB)
+- **Satellite Calibration**: Calibrates 10-30m satellite indices using airborne measurements
+- **Enhanced Accuracy**: Improves wildfire risk prediction through better vegetation characterization
+- **Public Data Access**: All NEON AOP data is publicly available through the NEON Data Portal
 
-1. **Real-time Risk Assessment** - Live wildfire risk scores using satellite and weather data
-2. **Environmental Monitoring** - Tracking of weather, vegetation, and topographical conditions
-3. **Predictive Analytics** - Machine learning models trained on historical fire data
-4. **Interactive Dashboard** - Web interface for risk visualization and analysis
-5. **API Access** - RESTful endpoints for integration with other systems
-6. **Modern Fire Indices** - 2024 research-based algorithms (VPD, HDW, ML-FPI)
-7. **Satellite Integration** - VIIRS, Sentinel-5P, and ECOSTRESS data
+### Supported NEON Sites
+- **SRER**: Santa Rita Experimental Range (Arizona) - Desert grassland ecosystem
+- **JORN**: Jornada Experimental Range (New Mexico) - Chihuahuan Desert
+- **ONAQ**: Onaqui Airstrip (Utah) - Sagebrush steppe
+- **SJER**: San Joaquin Experimental Range (California) - Oak woodland
 
-## Quick Start
+### Data Products
+- **Canopy Height Model (CHM)**: 1m resolution vegetation height
+- **Hyperspectral Reflectance**: 426 bands (380-2510nm) for detailed spectral analysis
+- **RGB Camera Imagery**: 10cm resolution visual interpretation
+- **Discrete Return LiDAR**: High-density 3D point clouds
 
-### Option 1: Full Installation (Recommended)
+### Crosswalk Models
+- **Linear Models**: Ridge regression for satellite-AOP mapping
+- **Ensemble Models**: Gradient Boosting for complex relationships
+- **Validation**: Comprehensive testing with R², MAE, and bias metrics
+
+## 🔧 Installation
+
+### Quick Start
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/wildfire-risk-prediction.git
 cd wildfire-risk-prediction
 
-# Install all dependencies
-pip install -r requirements.txt
-
-# Set up your API keys
-python create_env_file.py
-
-# Launch the dashboard
-python run_dashboard.py
-```
-
-### Option 2: Interactive Installation
-```bash
-# Use the interactive installer
+# Install dependencies
 python install_dependencies.py
 
-# Follow the prompts to choose your setup level
-# Then set up API keys and launch
-```
-
-### Option 3: Minimal Installation
-```bash
-# Install only essential packages
-pip install -r requirements-minimal.txt
-
-# Set up your API keys
+# Set up environment variables
 python create_env_file.py
 
-# Launch the dashboard
+# Run the dashboard
 python run_dashboard.py
 ```
 
-### Option 4: Development Setup
+### Dependencies
+- **Core**: `requirements.txt` - Essential packages for basic functionality
+- **Minimal**: `requirements-minimal.txt` - Core wildfire prediction capabilities
+- **Development**: `requirements-dev.txt` - Testing, linting, and development tools
+
+## 📊 Usage
+
+### NEON AOP Crosswalk
 ```bash
-# Install with development dependencies
-pip install -r requirements.txt
+# Download AOP data for a specific site
+make download-SRER
 
-# Run tests
-pytest tests/ -v
+# Process AOP data and extract features
+make process
 
-# Start API server
-python -m src.api.main
+# Train crosswalk models
+make calibrate
+
+# Validate models
+make validate
+
+# Run complete pipeline
+make all
 ```
 
-## Package Management
+### Python API
+```python
+from src.integration.aop_integration import AOPIntegrationManager
 
-### Requirements Files
-- **`requirements.txt`** - Complete installation with all features
-- **`requirements-minimal.txt`** - Essential packages only
-- **`requirements-dev.txt`** - Development and testing dependencies
+# Initialize integration manager
+manager = AOPIntegrationManager('configs/aop_sites.yaml')
 
-### Core Dependencies
-- **Machine Learning**: TensorFlow, XGBoost, LightGBM, Scikit-learn
-- **Data Processing**: Pandas, NumPy, GeoPandas, Rasterio
-- **Web Framework**: FastAPI, Dash, Plotly
-- **Satellite Data**: Google Earth Engine API
-- **Visualization**: Matplotlib, Seaborn, Folium
+# Generate enhanced features
+enhanced_data = manager.get_enhanced_features(satellite_data, 'SRER', 2021)
 
-### Installation Options
-```bash
-# Full system (recommended for production)
-pip install -r requirements.txt
-
-# Minimal setup (core functionality only)
-pip install -r requirements-minimal.txt
-
-# Development environment
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+# Validate integration
+validation = manager.validate_integration('SRER', 2021)
 ```
-
-## Key Features
-
-### Real-Time Data Integration
-- **Satellite Imagery** - NDVI, NBR, NDWI from Sentinel-2 and Landsat
-- **Weather Data** - Temperature, humidity, wind, precipitation from OpenWeather
-- **Topographical Data** - Elevation, slope, aspect from USGS
-- **Fire History** - Historical fire data from CAL FIRE
-
-### Machine Learning Models
-- **Random Forest** - Baseline model with feature importance
-- **XGBoost** - Gradient boosting
-- **ConvLSTM** - Deep learning for temporal patterns
-- **Ensemble Methods** - Combined predictions for accuracy
 
 ### Dashboard
-- **Risk Assessment Tab** - Interactive maps and risk visualization
-- **Time Series Analysis** - Historical trends and seasonal patterns
-- **Feature Analysis** - Model interpretability and feature importance
-- **Model Comparison** - Performance metrics and validation
-- **Real-Time Predictions** - Manual input and location-based assessment
-- **Environmental Monitoring** - Live data from multiple sources
+- **Real-Time Monitoring**: Live environmental data and risk assessments
+- **Interactive Maps**: Geographic visualization of risk factors
+- **Model Insights**: Feature importance and prediction explanations
+- **Data Export**: Download results in multiple formats
 
-## System Architecture
+## 🔬 Scientific Foundation
+
+The system integrates cutting-edge research from 2020-2024:
+
+### Modern Fire Indices
+- **Enhanced Fire Weather Index (FWI)**: Improved meteorological fire danger assessment
+- **Hot-Dry-Windy (HDW) Index**: Advanced wind-driven fire potential modeling
+- **ML-based Fire Potential Index (FPI)**: Machine learning enhanced fire risk prediction
+
+### Advanced Satellite Features
+- **VIIRS Fire Detections**: Real-time fire hotspot identification
+- **Sentinel-5P CO Levels**: Atmospheric carbon monoxide monitoring
+- **ECOSTRESS Water Stress**: Evapotranspiration-based drought assessment
+
+### Environmental Integration
+- **Wildland-Urban Interface (WUI)**: Proximity to human development
+- **Social Vulnerability Index (SVI)**: Community resilience assessment
+- **Lightning Strike Density**: Natural ignition probability
+
+## 📁 Project Structure
 
 ```
 wildfire-risk-prediction/
 ├── src/
-│   ├── models/           # ML models (Random Forest, XGBoost, ConvLSTM)
-│   ├── features/         # Feature engineering and fire risk calculations
-│   ├── data_collection/  # Data clients (Earth Engine, NEON, OpenWeather)
-│   ├── api/             # FastAPI REST endpoints
-│   └── dashboard/       # Interactive web dashboard
-├── tests/               # Comprehensive test suite
-├── notebooks/           # Jupyter notebooks for exploration
-└── config.py           # Centralized configuration management
+│   ├── dashboard/          # Plotly Dash web interface
+│   ├── data_collection/    # Data acquisition modules
+│   ├── features/           # Feature engineering and AOP crosswalk
+│   ├── models/             # Machine learning models
+│   ├── integration/        # AOP integration and system coordination
+│   └── utils/              # Utility functions and geospatial tools
+├── configs/                # Configuration files
+├── tests/                  # Comprehensive test suite
+├── notebooks/              # Jupyter notebooks and examples
+├── data/                   # Data storage (not in Git)
+├── logs/                   # Processing logs
+└── docs/                   # Documentation
 ```
 
-## API Keys Required
-
-| Service | Purpose | Cost | Setup |
-|---------|---------|------|-------|
-| **Google Earth Engine** | Satellite imagery | **FREE** | [Sign up here](https://earthengine.google.com/) |
-| **OpenWeather** | Weather data | **FREE** | [Get API key](https://openweathermap.org/api) |
-| **NEON** | Ecological data | **FREE** | [Request access](https://data.neonscience.org/) |
-
-## Performance Metrics
-
-- **Prediction Accuracy**: 85-92% (depending on region and season)
-- **Data Update Frequency**: Real-time (weather), Daily (satellite), Monthly (topography)
-- **Response Time**: <2 seconds for risk assessment
-- **Scalability**: Handles 1000+ concurrent users
-
-## Deployment Options
-
-### Local Development
-```bash
-python run_dashboard.py
-```
-
-### Production Deployment
-```bash
-# Using Gunicorn
-gunicorn src.api.main:app -w 4 -k uvicorn.workers.UvicornWorker
-
-# Using Docker
-docker build -t wildfire-risk .
-docker run -p 8000:8000 wildfire-risk
-```
-
-## Testing
+## 🧪 Testing
 
 Run the comprehensive test suite:
 ```bash
-pytest tests/ -v
+# All tests
+python -m pytest
+
+# NEON AOP specific tests
+python -m pytest tests/test_aop_integration.py -v
+
+# Specific component tests
+python -m pytest tests/test_features/ -v
 ```
 
-Test environment setup:
+## 📚 Documentation
+
+- **Quick Start**: `QUICK_START.md` - Get up and running quickly
+- **Project Structure**: `PROJECT_STRUCTURE.md` - Detailed component overview
+- **NEON AOP**: `NEON_AOP_IMPLEMENTATION_SUMMARY.md` - Crosswalk system details
+- **API Reference**: `docs/api/` - Complete API documentation
+
+## 🌐 Data Sources
+
+### Public Data (No API Keys Required)
+- **NEON AOP Data**: Publicly available through NEON Data Portal
+- **OpenWeatherMap**: Free tier available (API key required)
+- **Google Earth Engine**: Free for research and education
+
+### Data Privacy
+- **No Sensitive Data**: Repository contains only code and configuration
+- **Public Access**: All referenced data sources are publicly available
+- **User Control**: Users download and process their own data locally
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our contributing guidelines and code of conduct.
+
+### Development Setup
 ```bash
-python test_env.py
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run linting
+black src/ tests/
+flake8 src/ tests/
+
+# Run tests with coverage
+pytest --cov=src --cov-report=html
 ```
 
-## Documentation
+## 📄 License
 
-- **API Documentation**: http://localhost:8000/docs (when running)
-- **Dashboard Guide**: Built into the web interface
-- **Model Documentation**: See individual model files in `src/models/`
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Contributing
+## 🙏 Acknowledgments
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+- **NEON**: National Ecological Observatory Network for AOP data
+- **OpenWeatherMap**: Weather data and API
+- **Google Earth Engine**: Satellite data and processing platform
+- **Research Community**: Latest wildfire science and methodologies
 
-## Scientific Foundation
+## 📞 Support
 
-### Modern Research (2020-2024)
-This system implements cutting-edge wildfire prediction research:
-
-- **Machine Learning Applications**: Based on Jain et al. (2020) comprehensive review of ML in wildfire science
-- **Deep Learning**: Implements approaches from Prapas et al. (2023) and Huot et al. (2022) for spatiotemporal modeling
-- **Satellite Integration**: Following Chuvieco et al. (2023) and Ban et al. (2020) for real-time monitoring
-- **Climate Adaptation**: Incorporates Abatzoglou et al. (2021) and Williams et al. (2023) climate projections
-
-### Key Innovations
-- **Modern Fire Indices**: Vapor Pressure Deficit (VPD) and Hot-Dry-Windy Index (HDW) for improved accuracy
-- **ML-based Fire Potential**: Advanced algorithms that learn complex nonlinear relationships
-- **Multi-source Data Fusion**: Combines satellite, weather, and social vulnerability data
-- **Deep Learning Models**: ConvLSTM for capturing spatiotemporal fire spread patterns
-- **Satellite-Derived Features**: VIIRS fire detections, Sentinel-5P CO levels, ECOSTRESS water stress
-- **Social & Environmental Data**: WUI proximity, social vulnerability index, lightning density
-- **NEON AOP Integration**: High-resolution airborne LiDAR and hyperspectral data for calibration
-
-### Historical Baselines
-We maintain implementations of classical models for comparison and validation:
-- Canadian FWI (Van Wagner, 1987) - Industry standard for decades
-- KBDI drought index (Keetch & Byram, 1968) - Fundamental drought metric
-- Nelson dead fuel moisture (2000) - Physical moisture modeling
-- Rothermel spread model (1972) - Fire behavior foundations
-
-## NEON AOP Integration
-
-This project integrates high-resolution airborne data from NEON's Airborne Observation Platform (AOP) to calibrate and validate satellite-derived vegetation indices. The crosswalk models improve fire risk predictions by incorporating fine-scale canopy structure and hyperspectral signatures.
-
-### Target Sites
-- **GRSM**: Great Smoky Mountains (2016 Chimney Tops 2 Fire)
-- **SOAP**: Soaproot Saddle (2020 Creek Fire, 2021 Blue Fire)  
-- **SJER**: San Joaquin Experimental Range (fire-prone ecosystem)
-- **SYCA**: Sycamore Creek (2024 Sand Stone Fire)
-
-### AOP Features
-- **Canopy Structure**: Height percentiles, cover fraction, complexity metrics from LiDAR
-- **Hyperspectral Indices**: High-resolution NDVI, NBR, NDWI, and other vegetation indices
-- **Texture Analysis**: GLCM-based texture features for heterogeneity assessment
-- **Crosswalk Models**: Machine learning models that map satellite to AOP-derived features
-
-### Privacy Note
-Raw NEON AOP data is stored in a private repository. This public repository contains only:
-- Configuration files and processing code
-- Aggregated 10-30m features  
-- Trained crosswalk models
-- Sample tiles for demonstration
-
-See PRIVATE_DATA.md for information about accessing raw AOP data.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Summary
-
-This system demonstrates:
-- **Full-stack development** (ML, API, Dashboard, Data Integration)
-- **Modern data science** (2020-2024 research, satellite imagery, environmental monitoring)
-- **Production deployment** (scalable architecture, testing, documentation)
-- **Code quality** (clean code, comprehensive testing, user experience)
-- **Scientific rigor** (peer-reviewed research, validated algorithms)
+- **Issues**: GitHub Issues for bug reports and feature requests
+- **Discussions**: GitHub Discussions for questions and community support
+- **Documentation**: Comprehensive guides and examples in the docs folder
 
 ---
 
-*Built with Python, Dash, FastAPI, TensorFlow, and real satellite data using the latest wildfire science research*
+**Note**: This is a public repository. All NEON AOP data referenced is publicly available through the NEON Data Portal. No private or sensitive data is included in this repository.

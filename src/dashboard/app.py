@@ -30,11 +30,14 @@ app = dash.Dash(__name__,
                 title="Wildfire Risk Prediction Dashboard",
                 suppress_callback_exceptions=True)
 
+# Import and register callbacks
+from .callbacks import register_callbacks
+
 # App layout
 app.layout = html.Div([
     # Header
     html.Div([
-        html.H1("🔥 Wildfire Risk Prediction Dashboard", 
+        html.H1("Wildfire Risk Prediction Dashboard", 
                 style={'textAlign': 'center', 'color': '#2E8B57', 'marginBottom': '20px'}),
         html.P("Interactive visualization and analysis platform for wildfire risk assessment",
                style={'textAlign': 'center', 'color': '#666', 'marginBottom': '30px'})
@@ -387,6 +390,9 @@ app.layout = html.Div([
                style={'textAlign': 'center', 'color': '#666', 'fontSize': '12px'})
     ], style={'marginTop': '40px'})
 ], style={'padding': '20px', 'fontFamily': 'Arial, sans-serif'})
+
+# Register callbacks
+register_callbacks(app)
 
 def create_app():
     """Create and return the configured Dash application."""

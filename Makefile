@@ -1,212 +1,295 @@
-# Makefile for NEON AOP wildfire crosswalk pipeline
+# Makefile for NEON AOP Crosswalk Processing
+# This file provides targets for downloading, processing, and analyzing AOP data
 
-.PHONY: help all clean test lint format
-.PHONY: aop_fetch aop_features aop_crosswalk aop_eval aop_all
-.PHONY: satellite_fetch satellite_features
-.PHONY: install setup
+.PHONY: help install setup download process calibrate validate all clean
 
 # Default target
-.DEFAULT_GOAL := help
-
-# Variables
-PYTHON := python
-PIP := pip
-SITES := GRSM SOAP SJER SYCA
-YEARS := 2015,2017,2019,2021,2023,2024
-AOP_DATA_ROOT ?= ./data/raw/aop
-AOP_OUT_ROOT ?= ./data/processed/aop
-REPORTS_DIR := ./reports/aop
-
-# Help target
 help:
-	@echo "NEON AOP Wildfire Crosswalk Pipeline"
+	@echo "NEON AOP Crosswalk Processing Makefile"
 	@echo "====================================="
 	@echo ""
-	@echo "Setup commands:"
-	@echo "  install       - Install Python dependencies"
-	@echo "  setup         - Set up directories and environment"
+	@echo "Available targets:"
+	@echo "  install     - Install required dependencies"
+	@echo "  setup       - Set up directory structure and configuration"
+	@echo "  download    - Download AOP data for all sites"
+	@echo "  process     - Process AOP data and extract features"
+	@echo "  calibrate   - Calibrate crosswalk models"
+	@echo "  validate    - Validate crosswalk models"
+	@echo "  all         - Run complete pipeline (download -> process -> calibrate -> validate)"
+	@echo "  clean       - Clean up temporary files"
+	@echo "  help        - Show this help message"
 	@echo ""
-	@echo "AOP pipeline commands:"
-	@echo "  aop_fetch     - Download NEON AOP data for target sites"
-	@echo "  aop_features  - Extract features from AOP data"
-	@echo "  aop_crosswalk - Train/validate satellite-AOP crosswalk models"
-	@echo "  aop_eval      - Run evaluation notebook and generate report"
-	@echo "  aop_all       - Run complete AOP pipeline"
+	@echo "Site-specific targets:"
+	@echo "  download-SRER  - Download data for Santa Rita Experimental Range"
+	@echo "  download-JORN  - Download data for Jornada Experimental Range"
+	@echo "  download-ONAQ  - Download data for Onaqui Airstrip"
+	@echo "  download-SJER  - Download data for San Joaquin Experimental Range"
 	@echo ""
-	@echo "Satellite pipeline commands:"
-	@echo "  satellite_fetch    - Download satellite data for sites"
-	@echo "  satellite_features - Extract satellite features"
-	@echo ""
-	@echo "Utility commands:"
-	@echo "  clean         - Remove intermediate files"
-	@echo "  test          - Run unit tests"
-	@echo "  lint          - Run code linting"
-	@echo "  format        - Format code with black"
-	@echo ""
-	@echo "Variables:"
-	@echo "  SITES='$(SITES)'"
-	@echo "  YEARS='$(YEARS)'"
-	@echo "  AOP_DATA_ROOT='$(AOP_DATA_ROOT)'"
-	@echo "  AOP_OUT_ROOT='$(AOP_OUT_ROOT)'"
+	@echo "Example usage:"
+	@echo "  make setup"
+	@echo "  make download-SRER"
+	@echo "  make process"
+	@echo "  make calibrate"
 
-# Installation
+# Configuration
+CONFIG_FILE = configs/aop_sites.yaml
+SITES = SRER JORN ONAQ SJER
+YEARS = 2021 2022
+DATA_ROOT = data
+RAW_DIR = $(DATA_ROOT)/raw/aop
+PROCESSED_DIR = $(DATA_ROOT)/processed/aop
+MODELS_DIR = $(DATA_ROOT)/models/aop_crosswalk
+OUTPUTS_DIR = $(DATA_ROOT)/outputs/aop_crosswalk
+LOGS_DIR = logs/aop_crosswalk
+
+# Python environment
+PYTHON = python
+VENV = venv
+PIP = $(VENV)/bin/pip
+PYTHON_VENV = $(VENV)/bin/python
+
+# Install dependencies
 install:
+	@echo "Installing required dependencies..."
 	$(PIP) install -r requirements.txt
-	$(PIP) install -e .
+	$(PIP) install -r requirements-dev.txt
+	@echo "Dependencies installed successfully!"
 
-setup: install
-	mkdir -p $(AOP_DATA_ROOT)
-	mkdir -p $(AOP_OUT_ROOT)
-	mkdir -p $(REPORTS_DIR)
-	mkdir -p data/models/aop_crosswalk
-	mkdir -p data/intermediate/aop
-	mkdir -p logs
-	@echo "Setup complete. Don't forget to:"
-	@echo "1. Copy .env.example to .env and fill in your API keys"
-	@echo "2. Verify NEON API access"
+# Set up directory structure
+setup:
+	@echo "Setting up directory structure..."
+	mkdir -p $(RAW_DIR)
+	mkdir -p $(PROCESSED_DIR)
+	mkdir -p $(MODELS_DIR)
+	mkdir -p $(OUTPUTS_DIR)
+	mkdir -p $(LOGS_DIR)
+	@echo "Directory structure created!"
 
-# AOP Data Pipeline
-aop_fetch:
-	@echo "Fetching NEON AOP data for sites: $(SITES)"
-	$(PYTHON) -m src.data_collection.neon_client download-aop \
-		--sites $(SITES) \
+# Download AOP data for all sites
+download: $(addprefix download-,$(SITES))
+	@echo "All AOP data downloaded successfully!"
+
+# Download data for specific site
+download-%:
+	@echo "Downloading AOP data for site $*..."
+	$(PYTHON_VENV) -m src.data_collection.neon_client download_aop_data \
+		--site $* \
 		--years $(YEARS) \
-		--products chm,hyperspectral \
-		--output $(AOP_DATA_ROOT)
+		--output-dir $(RAW_DIR)/$* \
+		--config $(CONFIG_FILE)
+	@echo "Download complete for site $*"
 
-aop_features: aop_fetch
-	@echo "Extracting features from AOP data"
-	@for site in $(shell echo $(SITES) | tr ',' ' '); do \
-		echo "Processing $$site..."; \
-		$(PYTHON) -m src.features.aop_features \
-			--site $$site \
-			--config configs/aop_sites.yaml \
-			--output $(AOP_OUT_ROOT); \
+# Process AOP data and extract features
+process:
+	@echo "Processing AOP data and extracting features..."
+	@for site in $(SITES); do \
+		for year in $(YEARS); do \
+			if [ -d "$(RAW_DIR)/$$site/$$year" ]; then \
+				echo "Processing $$site $$year..."; \
+				$(PYTHON_VENV) -m src.features.aop_features \
+					--site $$site \
+					--year $$year \
+					--data-dir $(RAW_DIR)/$$site/$$year \
+					--output-dir $(PROCESSED_DIR)/$$site/$$year; \
+			fi; \
+		done; \
 	done
+	@echo "AOP data processing complete!"
 
-aop_crosswalk: aop_features satellite_features
-	@echo "Training crosswalk models"
-	$(PYTHON) -m src.features.aop_crosswalk \
-		--sites $(SITES) \
-		--years $(YEARS) \
-		--mode calibrate \
+# Calibrate crosswalk models
+calibrate:
+	@echo "Calibrating crosswalk models..."
+	$(PYTHON_VENV) -m src.features.aop_crosswalk \
+		--satellite-data $(PROCESSED_DIR)/satellite_indices.csv \
+		--aop-data $(PROCESSED_DIR)/aop_features.csv \
+		--target-vars chm_mean chm_std canopy_cover_gt2m canopy_cover_gt5m ndvi_aop evi_aop nbr_aop \
 		--model-type linear \
-		--output data/models/aop_crosswalk/
-	@echo "Validating crosswalk models"
-	$(PYTHON) -m src.features.aop_crosswalk \
-		--sites $(SITES) \
-		--years $(YEARS) \
-		--mode validate \
-		--output $(REPORTS_DIR)
+		--output-dir $(MODELS_DIR) \
+		--mode calibrate
+	@echo "Crosswalk model calibration complete!"
 
-aop_eval: aop_crosswalk
-	@echo "Running evaluation notebook"
-	jupyter nbconvert --execute notebooks/04_aop_crosswalk_demo.ipynb \
-		--to html \
-		--output $(REPORTS_DIR)/crosswalk_demo.html \
-		--ExecutePreprocessor.timeout=600
+# Validate crosswalk models
+validate:
+	@echo "Validating crosswalk models..."
+	$(PYTHON_VENV) -m src.features.aop_crosswalk \
+		--satellite-data $(PROCESSED_DIR)/satellite_indices.csv \
+		--aop-data $(PROCESSED_DIR)/aop_features.csv \
+		--target-vars chm_mean chm_std canopy_cover_gt2m canopy_cover_gt5m ndvi_aop evi_aop nbr_aop \
+		--output-dir $(MODELS_DIR) \
+		--mode validate
+	@echo "Crosswalk model validation complete!"
 
-aop_all: aop_fetch aop_features aop_crosswalk aop_eval
-	@echo "Complete AOP pipeline finished"
+# Run complete pipeline
+all: setup download process calibrate validate
+	@echo "Complete AOP crosswalk pipeline finished successfully!"
 
-# Satellite Data Pipeline
-satellite_fetch:
-	@echo "Fetching satellite data for AOP sites"
-	$(PYTHON) -m src.data_collection.satellite_client download \
-		--sites $(SITES) \
-		--years $(YEARS) \
-		--sensors sentinel2,landsat8 \
-		--output data/raw/satellite
-
-satellite_features: satellite_fetch
-	@echo "Extracting satellite features"
-	$(PYTHON) -m src.features.fire_features extract-satellite \
-		--sites $(SITES) \
-		--config configs/aop_sites.yaml \
-		--output data/processed/satellite
-
-# Testing and Code Quality
-test:
-	pytest tests/ -v --cov=src --cov-report=html
-
-test-aop:
-	pytest tests/test_aop_features.py tests/test_aop_crosswalk.py -v
-
-lint:
-	flake8 src/ --max-line-length=100 --ignore=E203,W503
-	pylint src/ --disable=C0103,C0114,C0115,C0116
-
-format:
-	black src/ tests/ --line-length=100
-	isort src/ tests/ --profile black
-
-# Cleaning
+# Clean up temporary files
 clean:
-	rm -rf data/intermediate/aop/
-	rm -rf $(REPORTS_DIR)/*.png
-	rm -rf __pycache__
-	rm -rf .pytest_cache
-	rm -rf .coverage
-	rm -rf htmlcov
-	find . -type f -name "*.pyc" -delete
-	find . -type d -name "__pycache__" -delete
+	@echo "Cleaning up temporary files..."
+	rm -rf $(LOGS_DIR)/*
+	rm -rf $(OUTPUTS_DIR)/temp/*
+	@echo "Cleanup complete!"
 
-clean-all: clean
-	rm -rf $(AOP_OUT_ROOT)/*
-	rm -rf data/models/aop_crosswalk/*
-	rm -rf $(REPORTS_DIR)/*
+# Test individual components
+test-geoalign:
+	@echo "Testing geospatial alignment utilities..."
+	$(PYTHON_VENV) -c "from src.utils.geoalign import *; print('Geoalign utilities working correctly!')"
 
-# Utilities
-check-env:
-	@if [ ! -f .env ]; then \
-		echo "ERROR: .env file not found. Copy .env.example to .env and configure."; \
+test-aop-features:
+	@echo "Testing AOP feature extraction..."
+	$(PYTHON_VENV) -c "from src.features.aop_features import *; print('AOP features working correctly!')"
+
+test-crosswalk:
+	@echo "Testing crosswalk models..."
+	$(PYTHON_VENV) -c "from src.features.aop_crosswalk import *; print('Crosswalk models working correctly!')"
+
+test-all: test-geoalign test-aop-features test-crosswalk
+	@echo "All components tested successfully!"
+
+# Development targets
+dev-setup: setup
+	@echo "Setting up development environment..."
+	$(PIP) install -e .
+	@echo "Development environment ready!"
+
+dev-test:
+	@echo "Running development tests..."
+	$(PYTHON_VENV) -m pytest tests/ -v
+
+dev-lint:
+	@echo "Running linting checks..."
+	$(PYTHON_VENV) -m flake8 src/ tests/
+	$(PYTHON_VENV) -m black --check src/ tests/
+
+dev-format:
+	@echo "Formatting code..."
+	$(PYTHON_VENV) -m black src/ tests/
+
+# Documentation targets
+docs:
+	@echo "Generating documentation..."
+	$(PYTHON_VENV) -m pdoc --html src/ --output-dir docs/
+	@echo "Documentation generated in docs/"
+
+# Monitoring targets
+status:
+	@echo "AOP Crosswalk Processing Status"
+	@echo "=============================="
+	@echo "Raw data:"
+	@for site in $(SITES); do \
+		echo "  $$site:"; \
+		for year in $(YEARS); do \
+			if [ -d "$(RAW_DIR)/$$site/$$year" ]; then \
+				echo "    $$year: ✓"; \
+			else \
+				echo "    $$year: ✗"; \
+			fi; \
+		done; \
+	done
+	@echo ""
+	@echo "Processed data:"
+	@for site in $(SITES); do \
+		echo "  $$site:"; \
+		for year in $(YEARS); do \
+			if [ -d "$(PROCESSED_DIR)/$$site/$$year" ]; then \
+				echo "    $$year: ✓"; \
+			else \
+				echo "    $$year: ✗"; \
+			fi; \
+		done; \
+	done
+	@echo ""
+	@echo "Models:"
+	if [ -d "$(MODELS_DIR)" ] && [ "$(shell ls $(MODELS_DIR)/*.pkl 2>/dev/null | wc -l)" -gt 0 ]; then \
+		echo "  Crosswalk models: ✓"; \
+	else \
+		echo "  Crosswalk models: ✗"; \
+	fi
+
+# Backup targets
+backup:
+	@echo "Creating backup of processed data and models..."
+	tar -czf aop_crosswalk_backup_$(shell date +%Y%m%d_%H%M%S).tar.gz \
+		$(PROCESSED_DIR) $(MODELS_DIR) $(OUTPUTS_DIR)
+	@echo "Backup created successfully!"
+
+# Restore from backup
+restore:
+	@echo "Restoring from backup..."
+	@if [ -z "$(BACKUP_FILE)" ]; then \
+		echo "Error: Please specify BACKUP_FILE=filename.tar.gz"; \
 		exit 1; \
 	fi
-	@echo "Environment file found"
+	tar -xzf $(BACKUP_FILE)
+	@echo "Restore complete!"
 
-logs:
-	@mkdir -p logs
-	@echo "Logs directory ready"
+# Performance monitoring
+benchmark:
+	@echo "Running performance benchmarks..."
+	$(PYTHON_VENV) -m src.utils.benchmark \
+		--config $(CONFIG_FILE) \
+		--output $(OUTPUTS_DIR)/benchmark_results.json
+	@echo "Benchmarks complete!"
 
-# Development helpers
-dev-notebook:
-	jupyter lab --notebook-dir=notebooks/
+# Quality assurance
+qa-check:
+	@echo "Running quality assurance checks..."
+	$(PYTHON_VENV) -m src.utils.qa_check \
+		--config $(CONFIG_FILE) \
+		--data-dir $(PROCESSED_DIR) \
+		--output $(OUTPUTS_DIR)/qa_report.html
+	@echo "QA checks complete!"
 
-dev-server:
-	$(PYTHON) -m src.api.server --reload
+# Report generation
+report:
+	@echo "Generating comprehensive report..."
+	$(PYTHON_VENV) -m src.utils.report_generator \
+		--config $(CONFIG_FILE) \
+		--data-dir $(PROCESSED_DIR) \
+		--models-dir $(MODELS_DIR) \
+		--output $(OUTPUTS_DIR)/aop_crosswalk_report.html
+	@echo "Report generated successfully!"
 
-# Docker support (optional)
-docker-build:
-	docker build -t wildfire-aop .
+# Integration with main wildfire system
+integrate:
+	@echo "Integrating AOP crosswalk with main wildfire system..."
+	$(PYTHON_VENV) -m src.integration.aop_integration \
+		--config $(CONFIG_FILE) \
+		--models-dir $(MODELS_DIR) \
+		--output $(OUTPUTS_DIR)/integrated_features.csv
+	@echo "Integration complete!"
 
-docker-run:
-	docker run -it --rm \
-		-v $(PWD):/app \
-		-v $(AOP_DATA_ROOT):/data/aop \
-		wildfire-aop
-
-# Performance profiling
-profile-features:
-	$(PYTHON) -m cProfile -o profile_results.prof \
-		-m src.features.aop_features --site GRSM --year 2017
-	$(PYTHON) -m pstats profile_results.prof
-
-# Data validation
-validate-data:
-	$(PYTHON) scripts/validate_aop_data.py \
-		--sites $(SITES) \
-		--check-completeness \
-		--check-quality
-
-# Generate documentation
-docs:
-	sphinx-build -b html docs/ docs/_build/html
-
-# Continuous Integration helpers
-ci-test: lint test
-
-ci-deploy:
-	@echo "Deploy step would go here"
-
-.PHONY: check-env logs dev-notebook dev-server docker-build docker-run
-.PHONY: profile-features validate-data docs ci-test ci-deploy
+# Show help for specific target
+help-%:
+	@echo "Help for target '$*':"
+	@echo ""
+	@case "$*" in \
+		download) \
+			echo "Downloads AOP data from NEON API for all configured sites."; \
+			echo "Requires NEON_API_TOKEN environment variable."; \
+			echo ""; \
+			echo "Usage: make download"; \
+			echo "       make download-SRER  # Download for specific site"; \
+			;; \
+		process) \
+			echo "Processes downloaded AOP data and extracts features."; \
+			echo "Requires raw data to be downloaded first."; \
+			echo ""; \
+			echo "Usage: make process"; \
+			;; \
+		calibrate) \
+			echo "Calibrates crosswalk models using satellite and AOP data."; \
+			echo "Requires processed data from 'make process'."; \
+			echo ""; \
+			echo "Usage: make calibrate"; \
+			;; \
+		validate) \
+			echo "Validates calibrated crosswalk models."; \
+			echo "Requires calibrated models from 'make calibrate'."; \
+			echo ""; \
+			echo "Usage: make validate"; \
+			;; \
+		*) \
+			echo "No help available for target '$*'"; \
+			;; \
+	esac

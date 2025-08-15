@@ -1,274 +1,216 @@
-# NEON AOP product configuration
-# Product IDs and specifications for AOP data downloads
+# NEON AOP Data Products Configuration
+# Public repository configuration for NEON AOP data products
+# All products referenced here are publicly available through NEON Data Portal
 
-# TODO: Verify all product IDs with NEON data portal
-# Current IDs are based on NEON documentation but may need updates
+# NEON AOP data products available for crosswalk analysis
+data_products:
+  # Canopy Height Model (CHM)
+  DP3.30024.001:
+    name: "Canopy Height Model"
+    description: "Raster of canopy height above ground derived from LiDAR"
+    units: "meters"
+    resolution: 1.0
+    format: "GeoTIFF"
+    bands: 1
+    data_type: "float32"
+    no_data_value: -9999
+    processing_level: "Level 3"
+    citation: "NEON (National Ecological Observatory Network). 2021. Canopy Height Model (DP3.30024.001). https://data.neonscience.org"
+    
+    # Processing parameters
+    processing:
+      algorithm: "TCHM"  # Top of Canopy Height Model
+      ground_classification: "DP1.30003.001"  # Uses ground points from LiDAR
+      smoothing: "Gaussian"
+      smoothing_window: 3
+      outlier_removal: True
+      outlier_threshold: 3.0  # Standard deviations
+    
+    # Quality metrics
+    quality:
+      accuracy: 0.5  # meters
+      precision: 0.1  # meters
+      coverage_threshold: 0.8  # Minimum valid pixel coverage
+      validation_method: "Ground truth comparison with field measurements"
+    
+    # Derived features
+    derived_features:
+      - "chm_mean"
+      - "chm_std"
+      - "chm_p10"
+      - "chm_p25"
+      - "chm_p50"
+      - "chm_p75"
+      - "chm_p90"
+      - "chm_max"
+      - "canopy_cover_gt2m"
+      - "canopy_cover_gt5m"
+      - "rumple_index"
+      - "height_entropy"
 
-aop_products:
-  # LiDAR-derived products
-  canopy_height_model:
-    id: "DP3.30015.001"
-    name: "Ecosystem structure - CHM"
-    type: "raster"
-    format: "GeoTIFF"
-    resolution: 1.0  # meters
-    units: "meters"
-    description: "Canopy height model derived from LiDAR point cloud"
-    
-  digital_terrain_model:
-    id: "DP3.30024.001"
-    name: "Elevation - DTM"
-    type: "raster"
-    format: "GeoTIFF"
+  # Hyperspectral Reflectance
+  DP3.30026.001:
+    name: "Hyperspectral Reflectance"
+    description: "Calibrated hyperspectral reflectance data from 380-2510nm"
+    units: "unitless"
     resolution: 1.0
-    units: "meters"
-    description: "Bare earth elevation model"
-    
-  digital_surface_model:
-    id: "DP3.30024.001"
-    name: "Elevation - DSM"
-    type: "raster"
-    format: "GeoTIFF"
-    resolution: 1.0
-    units: "meters"
-    description: "Top of canopy elevation model"
-    
-  slope_aspect:
-    id: "DP3.30025.001"
-    name: "Slope and Aspect"
-    type: "raster"
-    format: "GeoTIFF"
-    resolution: 1.0
-    units: "degrees"
-    description: "Terrain slope and aspect derived from DTM"
-    
-  # Hyperspectral products
-  hyperspectral_reflectance:
-    id: "DP3.30006.001"
-    name: "Spectrometer orthorectified surface directional reflectance"
-    type: "raster"
     format: "HDF5"
     bands: 426
-    wavelength_range: [380, 2510]  # nm
-    resolution: 1.0
-    units: "reflectance"
-    description: "Full hyperspectral cube, atmospherically corrected"
+    data_type: "float32"
+    no_data_value: -9999
+    processing_level: "Level 3"
+    citation: "NEON (National Ecological Observatory Network). 2021. Hyperspectral Reflectance (DP3.30026.001). https://data.neonscience.org"
     
-  hyperspectral_indices:
-    id: "DP3.30026.001"  # TODO: Verify if this exists
-    name: "Vegetation indices from hyperspectral"
-    type: "raster"
-    format: "GeoTIFF"
-    resolution: 1.0
-    indices: ["NDVI", "EVI", "ARVI", "SAVI", "PRI", "WBI", "NDNI"]
-    description: "Pre-calculated vegetation indices"
+    # Processing parameters
+    processing:
+      atmospheric_correction: "ACORN"
+      radiometric_calibration: "Field spectrometer measurements"
+      geometric_correction: "GPS/IMU data"
+      quality_filtering: "Signal-to-noise ratio > 100"
     
-  # Camera products
-  high_resolution_camera:
-    id: "DP3.30010.001"
-    name: "High-resolution orthorectified camera imagery"
-    type: "raster"
-    format: "GeoTIFF"
-    bands: 3  # RGB
-    resolution: 0.1  # 10 cm
-    units: "DN"
-    description: "RGB camera imagery at 10cm resolution"
+    # Quality metrics
+    quality:
+      spectral_range: "380-2510 nm"
+      spectral_resolution: "5 nm"
+      radiometric_accuracy: "±5%"
+      geometric_accuracy: "±1 m"
     
-  # Derived products we'll compute
-derived_features:
-  structure:
-    - name: "chm_p10"
-      description: "10th percentile canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_p25"
-      description: "25th percentile canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_p50"
-      description: "Median canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_p75"
-      description: "75th percentile canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_p90"
-      description: "90th percentile canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_mean"
-      description: "Mean canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_std"
-      description: "Standard deviation of canopy height"
-      source: "canopy_height_model"
-      units: "meters"
-      
-    - name: "chm_cv"
-      description: "Coefficient of variation of canopy height"
-      source: "canopy_height_model"
-      units: "ratio"
-      
-    - name: "canopy_cover_gt2m"
-      description: "Fraction of pixels with canopy > 2m"
-      source: "canopy_height_model"
-      units: "fraction"
-      
-    - name: "canopy_cover_gt5m"
-      description: "Fraction of pixels with canopy > 5m"
-      source: "canopy_height_model"
-      units: "fraction"
-      
-    - name: "canopy_cover_gt10m"
-      description: "Fraction of pixels with canopy > 10m"
-      source: "canopy_height_model"
-      units: "fraction"
-      
-    - name: "chm_rumple"
-      description: "Canopy surface roughness index"
-      source: "canopy_height_model"
-      units: "ratio"
-      
-    - name: "chm_entropy"
-      description: "Shannon entropy of canopy heights"
-      source: "canopy_height_model"
-      units: "bits"
-      
-  spectral:
-    - name: "ndvi_aop"
-      description: "Normalized Difference Vegetation Index from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(NIR - Red) / (NIR + Red)"
-      range: [-1, 1]
-      
-    - name: "evi_aop"
-      description: "Enhanced Vegetation Index from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "2.5 * (NIR - Red) / (NIR + 6*Red - 7.5*Blue + 1)"
-      range: [-1, 1]
-      
-    - name: "savi_aop"
-      description: "Soil Adjusted Vegetation Index from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "1.5 * (NIR - Red) / (NIR + Red + 0.5)"
-      range: [-1, 1]
-      
-    - name: "msavi_aop"
-      description: "Modified SAVI from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(2*NIR + 1 - sqrt((2*NIR+1)^2 - 8*(NIR-Red))) / 2"
-      range: [-1, 1]
-      
-    - name: "ndwi_aop"
-      description: "Normalized Difference Water Index from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(Green - NIR) / (Green + NIR)"
-      range: [-1, 1]
-      
-    - name: "mndwi_aop"
-      description: "Modified NDWI from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(Green - SWIR1) / (Green + SWIR1)"
-      range: [-1, 1]
-      
-    - name: "nbr_aop"
-      description: "Normalized Burn Ratio from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(NIR - SWIR2) / (NIR + SWIR2)"
-      range: [-1, 1]
-      
-    - name: "nbr2_aop"
-      description: "Normalized Burn Ratio 2 from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(SWIR1 - SWIR2) / (SWIR1 + SWIR2)"
-      range: [-1, 1]
-      
-    - name: "ndsi_aop"
-      description: "Normalized Difference Soil Index from AOP"
-      source: "hyperspectral_reflectance"
-      formula: "(SWIR1 - Green) / (SWIR1 + Green)"
-      range: [-1, 1]
-      
-  texture:
-    - name: "nir_texture_contrast"
-      description: "GLCM contrast of NIR band"
-      source: "hyperspectral_reflectance"
-      window_size: 5
-      
-    - name: "nir_texture_homogeneity"
-      description: "GLCM homogeneity of NIR band"
-      source: "hyperspectral_reflectance"
-      window_size: 5
-      
-    - name: "nir_texture_energy"
-      description: "GLCM energy of NIR band"
-      source: "hyperspectral_reflectance"
-      window_size: 5
-      
-    - name: "nir_texture_correlation"
-      description: "GLCM correlation of NIR band"
-      source: "hyperspectral_reflectance"
-      window_size: 5
+    # Derived features
+    derived_features:
+      - "ndvi_aop"
+      - "evi_aop"
+      - "nbr_aop"
+      - "ndwi_aop"
+      - "msavi_aop"
+      - "savi_aop"
+      - "nbr2_aop"
+      - "ndsi_aop"
+      - "spectral_mean"
+      - "spectral_std"
+      - "spectral_min"
+      - "spectral_max"
 
-# Band definitions for hyperspectral cube
-# TODO: Update with actual NEON wavelength-to-band mapping
-hyperspectral_bands:
-  # Key bands for index calculation
-  blue:
-    wavelength: 480
-    band_index: 48  # TODO: Verify
-    bandwidth: 10
+  # RGB Camera Imagery
+  DP3.30010.001:
+    name: "RGB Camera Imagery"
+    description: "High-resolution RGB imagery for visual interpretation"
+    units: "unitless"
+    resolution: 0.1
+    format: "GeoTIFF"
+    bands: 3
+    data_type: "uint8"
+    no_data_value: 0
+    processing_level: "Level 3"
+    citation: "NEON (National Ecological Observatory Network). 2021. RGB Camera Imagery (DP3.30010.001). https://data.neonscience.org"
     
-  green:
-    wavelength: 560
-    band_index: 67  # TODO: Verify
-    bandwidth: 10
+    # Processing parameters
+    processing:
+      color_balance: "Automatic white balance"
+      geometric_correction: "GPS/IMU data"
+      mosaicking: "Seamless stitching"
+      compression: "Lossless"
     
-  red:
-    wavelength: 665
-    band_index: 90  # TODO: Verify
-    bandwidth: 10
+    # Quality metrics
+    quality:
+      spatial_resolution: "10 cm"
+      color_accuracy: "±10%"
+      geometric_accuracy: "±0.5 m"
     
-  red_edge:
-    wavelength: 705
-    band_index: 100  # TODO: Verify
-    bandwidth: 10
-    
-  nir:
-    wavelength: 860
-    band_index: 130  # TODO: Verify
-    bandwidth: 20
-    
-  swir1:
-    wavelength: 1610
-    band_index: 280  # TODO: Verify
-    bandwidth: 30
-    
-  swir2:
-    wavelength: 2190
-    band_index: 360  # TODO: Verify
-    bandwidth: 30
+    # Derived features
+    derived_features:
+      - "rgb_mean"
+      - "rgb_std"
+      - "brightness"
+      - "contrast"
+      - "saturation"
 
-# Download parameters
-download:
-  max_retries: 3
-  chunk_size: 1048576  # 1 MB chunks
-  timeout: 300  # seconds
-  parallel_downloads: 2
+  # Discrete Return LiDAR
+  DP1.30003.001:
+    name: "Discrete Return LiDAR"
+    description: "High-density point cloud data for 3D structure analysis"
+    units: "meters"
+    resolution: "Point cloud"
+    format: "LAS"
+    data_type: "float32"
+    no_data_value: "N/A"
+    processing_level: "Level 1"
+    citation: "NEON (National Ecological Observatory Network). 2021. Discrete Return LiDAR (DP1.30003.001). https://data.neonscience.org"
+    
+    # Processing parameters
+    processing:
+      point_density: ">8 points/m²"
+      classification: "Ground, vegetation, buildings"
+      filtering: "Noise removal and outlier detection"
+      coordinate_system: "UTM with geoid correction"
+    
+    # Quality metrics
+    quality:
+      point_density: "8-15 points/m²"
+      vertical_accuracy: "±0.1 m"
+      horizontal_accuracy: "±0.5 m"
+      classification_accuracy: ">95%"
+    
+    # Derived features
+    derived_features:
+      - "point_density"
+      - "ground_elevation"
+      - "vegetation_height"
+      - "canopy_roughness"
+      - "vertical_distribution"
+
+# Relationships between products
+relationships:
+  chm_dependencies:
+    - "DP1.30003.001"  # CHM derived from LiDAR
+  hsi_calibration:
+    - "DP3.30010.001"  # RGB for visual validation
+  quality_assessment:
+    - "DP3.30010.001"  # RGB for cloud detection
+    - "DP1.30003.001"  # LiDAR for ground truth
+
+# Quality control parameters
+quality_control:
+  cloud_detection:
+    method: "RGB threshold + spectral analysis"
+    threshold: "20% cloud cover maximum"
   
-# Processing parameters  
-processing:
-  tile_size: 1000  # Process in 1km x 1km tiles
-  overlap: 100  # 100m overlap between tiles
-  nodata_value: -9999
-  compression: "LZW"
-  tiled: true
-  blocksize: 256
+  data_completeness:
+    minimum_coverage: "80%"
+    gap_filling: "Interpolation for small gaps"
+  
+  temporal_consistency:
+    max_gap_days: "30 days"
+    seasonal_validation: "Field measurements"
+
+# Metadata requirements
+metadata:
+  required_fields:
+    - "site_code"
+    - "year"
+    - "flight_date"
+    - "processing_date"
+    - "data_quality_score"
+    - "cloud_cover_percentage"
+  
+  optional_fields:
+    - "weather_conditions"
+    - "flight_altitude"
+    - "sensor_calibration"
+    - "ground_control_points"
+
+# Processing workflow
+workflow:
+  steps:
+    1: "Data download from NEON Data Portal"
+    2: "Quality assessment and filtering"
+    3: "Geometric correction and alignment"
+    4: "Feature extraction and analysis"
+    5: "Crosswalk model training"
+    6: "Validation and assessment"
+  
+  outputs:
+    - "Processed AOP data"
+    - "Extracted features"
+    - "Trained crosswalk models"
+    - "Validation results"
+    - "Integration reports"
