@@ -21,6 +21,7 @@ import warnings
 from .baseline_model import RandomForestFireRiskModel
 from .xgboost_model import XGBoostFireRiskModel
 from .convlstm_model import ConvLSTMFireRiskModel
+from .lightgbm_model import LightGBMFireRiskModel
 
 
 class SklearnWrapper:
@@ -693,6 +694,49 @@ class EnsembleFireRiskModel:
         
         plt.tight_layout()
         plt.show()
+    
+    def create_modern_ensemble(self) -> Union[VotingRegressor, VotingClassifier]:
+        """
+        Create a 2024 state-of-the-art ensemble model.
+        
+        Combines traditional and modern approaches:
+        - Random Forest (baseline)
+        - XGBoost (gradient boosting)
+        - LightGBM (modern gradient boosting)
+        
+        References:
+            - Prapas et al. (2023): "Deep Learning for Global Wildfire Forecasting"
+            - Michael et al. (2024): "ML for High-Resolution Predictions"
+        """
+        # Create LightGBM model
+        lgb_model = LightGBMFireRiskModel(model_type=self.model_type)
+        
+        # Create modern ensemble with LightGBM
+        modern_models = [
+            ('random_forest', RandomForestFireRiskModel(model_type=self.model_type)),
+            ('xgboost', XGBoostFireRiskModel(model_type=self.model_type)),
+            ('lightgbm', lgb_model)
+        ]
+        
+        # Create sklearn-compatible estimators
+        sklearn_estimators = []
+        for name, model in modern_models:
+            sklearn_estimators.append((name, SklearnWrapper(model)))
+        
+        # Create voting ensemble with optimized weights
+        if self.model_type == 'regression':
+            return VotingRegressor(
+                estimators=sklearn_estimators,
+                weights=[0.3, 0.35, 0.35],
+                n_jobs=-1
+            )
+        else:
+            return VotingClassifier(
+                estimators=sklearn_estimators,
+                voting='soft',
+                weights=[0.3, 0.35, 0.35],
+                n_jobs=-1
+            )
     
     def save_model(self, filepath: str) -> None:
         """

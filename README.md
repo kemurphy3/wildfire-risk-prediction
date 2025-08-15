@@ -9,7 +9,7 @@ This system is complete and ready for production use.
 - **Real-time satellite data** from Google Earth Engine
 - **Live weather integration** from OpenWeather
 - **Ecological monitoring** from NEON
-- **Machine learning models** (Random Forest, XGBoost, ConvLSTM, Ensemble)
+- **Machine learning models** (Random Forest, XGBoost, LightGBM, ConvLSTM, Ensemble)
 - **Interactive dashboard** with real-time risk assessment
 - **Professional API** for programmatic access
 - **Comprehensive testing** and validation
@@ -23,6 +23,8 @@ This wildfire risk prediction system provides:
 3. **Predictive Analytics** - Machine learning models trained on historical fire data
 4. **Interactive Dashboard** - Web interface for risk visualization and analysis
 5. **API Access** - RESTful endpoints for integration with other systems
+6. **Modern Fire Indices** - 2024 research-based algorithms (VPD, HDW, ML-FPI)
+7. **Satellite Integration** - VIIRS, Sentinel-5P, and ECOSTRESS data
 
 ## Quick Start
 
@@ -83,8 +85,8 @@ python -m src.api.main
 - **`requirements-dev.txt`** - Development and testing dependencies
 
 ### Core Dependencies
-- **Machine Learning**: TensorFlow, XGBoost, Scikit-learn
-- **Data Processing**: Pandas, NumPy, GeoPandas
+- **Machine Learning**: TensorFlow, XGBoost, LightGBM, Scikit-learn
+- **Data Processing**: Pandas, NumPy, GeoPandas, Rasterio
 - **Web Framework**: FastAPI, Dash, Plotly
 - **Satellite Data**: Google Earth Engine API
 - **Visualization**: Matplotlib, Seaborn, Folium
@@ -212,6 +214,8 @@ This system implements cutting-edge wildfire prediction research:
 - **ML-based Fire Potential**: Advanced algorithms that learn complex nonlinear relationships
 - **Multi-source Data Fusion**: Combines satellite, weather, and social vulnerability data
 - **Deep Learning Models**: ConvLSTM for capturing spatiotemporal fire spread patterns
+- **Satellite-Derived Features**: VIIRS fire detections, Sentinel-5P CO levels, ECOSTRESS water stress
+- **Social & Environmental Data**: WUI proximity, social vulnerability index, lightning density
 
 ### Historical Baselines
 We maintain implementations of classical models for comparison and validation:

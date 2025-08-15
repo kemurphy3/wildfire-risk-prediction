@@ -10,13 +10,14 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
+from tensorflow.keras import layers, optimizers
 from tensorflow.keras.models import Sequential
 from typing import Tuple, Dict, Any, Optional, Union, List
 import matplotlib.pyplot as plt
 import joblib
 import os
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 
 class ConvLSTMFireRiskModel:

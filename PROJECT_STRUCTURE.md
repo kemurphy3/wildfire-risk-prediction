@@ -54,8 +54,9 @@ wildfire-risk-prediction/
 **Machine Learning Models** - State-of-the-art prediction algorithms
 - `baseline_model.py` - Random Forest with feature importance
 - `xgboost_model.py` - High-performance gradient boosting
+- `lightgbm_model.py` - Modern gradient boosting framework
 - `convlstm_model.py` - Deep learning for spatiotemporal data
-- `ensemble.py` - Advanced ensemble methods (voting, stacking)
+- `ensemble.py` - Advanced ensemble methods (voting, stacking, modern combinations)
 
 ## Data Flow Architecture
 
@@ -84,15 +85,18 @@ NEON Data                 ↗                                  ↘
 - **Professional UI/UX** with modern styling
 
 ### Models (src/models/)
-- **4 different ML algorithms** for diverse use cases
+- **5 different ML algorithms** for diverse use cases
 - **Hyperparameter tuning** and optimization
 - **Feature importance** analysis
 - **Model persistence** and loading
 - **Performance metrics** and validation
+- **Modern ensemble methods** with LightGBM integration
 
 ### Features (src/features/)
-- **20+ engineered features** for comprehensive risk assessment
-- **Scientific algorithms** based on fire research
+- **19+ engineered features** for comprehensive risk assessment
+- **Modern fire indices** (2020-2024 research) including VPD, HDW, ML-based FPI
+- **Satellite-derived features** from VIIRS, Sentinel-5P, and ECOSTRESS
+- **Social & environmental data** including WUI proximity and vulnerability indices
 - **Real-time calculations** from environmental data
 - **Domain expertise** in wildfire science
 

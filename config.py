@@ -15,11 +15,11 @@ try:
     env_file = Path('.env')
     if env_file.exists():
         load_dotenv(env_file)
-        print(f"✅ Loaded environment variables from {env_file}")
+        print(f"Loaded environment variables from {env_file}")
     else:
-        print("⚠️  No .env file found. Run: python create_env_file.py")
+        print("No .env file found. Run: python create_env_file.py")
 except ImportError:
-    print("⚠️  python-dotenv not installed. Install with: pip install python-dotenv")
+    print("python-dotenv not installed. Install with: pip install python-dotenv")
 
 # API Keys and External Services
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
