@@ -61,79 +61,79 @@ class SatelliteDataClient:
         self.max_retries = max_retries
         self.initialized = False
         
-        print("🛰️  Initializing Satellite Data Client...")
+        print("Initializing Satellite Data Client...")
         
         # Initialize Earth Engine
         try:
-            print("   📁 Checking for service account credentials...")
+            print("   Checking for service account credentials...")
             # Import from config to get the loaded environment variables
             import os
             from config import GOOGLE_EARTH_ENGINE_CREDENTIALS
             credentials_path = GOOGLE_EARTH_ENGINE_CREDENTIALS
             
             if credentials_path:
-                print(f"   ✅ Found credentials path: {credentials_path}")
+                print(f"   Found credentials path: {credentials_path}")
                 
                 if os.path.exists(credentials_path):
-                    print("   📄 Credentials file exists, loading service account...")
+                    print("   Credentials file exists, loading service account...")
                     # Use service account authentication
                     import ee
                     from google.oauth2 import service_account
                     
                     # Load service account credentials
-                    print("   🔐 Loading service account credentials...")
+                    print("   Loading service account credentials...")
                     credentials = service_account.Credentials.from_service_account_file(
                         credentials_path,
                         scopes=['https://www.googleapis.com/auth/earthengine']
                     )
-                    print("   ✅ Service account credentials loaded successfully")
+                    print("   Service account credentials loaded successfully")
                     
                     # Initialize Earth Engine with service account
-                    print("   🚀 Initializing Earth Engine with service account...")
+                    print("   Initializing Earth Engine with service account...")
                     ee.Initialize(credentials=credentials)
                     self.initialized = True
-                    print("   🎉 Google Earth Engine initialized successfully with service account!")
+                    print("   Google Earth Engine initialized successfully with service account!")
                     logger.info("Google Earth Engine initialized successfully with service account")
                     
                 else:
-                    print(f"   ❌ Credentials file not found: {credentials_path}")
-                    print("   🔄 Falling back to personal authentication...")
+                    print(f"   Credentials file not found: {credentials_path}")
+                    print("   Falling back to personal authentication...")
                     # Fallback to personal authentication
                     import ee
                     ee.Initialize()
                     self.initialized = True
-                    print("   🎉 Google Earth Engine initialized successfully with personal authentication!")
+                    print("   Google Earth Engine initialized successfully with personal authentication!")
                     logger.info("Google Earth Engine initialized successfully with personal authentication")
                     
             else:
-                print("   ⚠️  No service account credentials found")
-                print("   🔄 Using personal authentication...")
+                print("   No service account credentials found")
+                print("   Using personal authentication...")
                 # Fallback to personal authentication
                 import ee
                 ee.Initialize()
                 self.initialized = True
-                print("   🎉 Google Earth Engine initialized successfully with personal authentication!")
+                print("   Google Earth Engine initialized successfully with personal authentication!")
                 logger.info("Google Earth Engine initialized successfully with personal authentication")
                 
         except Exception as e:
-            print(f"   ❌ Error during initialization: {e}")
+            print(f"   Error during initialization: {e}")
             if "not registered to use Earth Engine" in str(e):
-                print("   ⚠️  Project not registered for Earth Engine. Using demo data.")
-                print("   📋 To enable real satellite data:")
+                print("   Project not registered for Earth Engine. Using demo data.")
+                print("   To enable real satellite data:")
                 print("      1. Visit: https://code.earthengine.google.com/register?project=wildfire-risk")
                 print("      2. Or enable Earth Engine API in Google Cloud Console")
                 logger.warning("Project not registered for Earth Engine. Using demo data.")
                 self.initialized = False
             else:
-                print("   ❌ Failed to initialize Google Earth Engine")
-                print("   💡 Please check your service account credentials or authenticate with 'earthengine authenticate'")
+                print("   Failed to initialize Google Earth Engine")
+                print("   Please check your service account credentials or authenticate with 'earthengine authenticate'")
                 logger.error(f"Failed to initialize Google Earth Engine: {e}")
                 self.initialized = False
         
         if self.initialized:
-            print("   🎯 Satellite client ready for real data!")
+            print("   Satellite client ready for real data!")
         else:
-            print("   🎭 Satellite client using demo data mode")
+            print("   Satellite client using demo data mode")
     
     def _validate_initialization(self) -> None:
         """Ensure Earth Engine is initialized before use."""

@@ -1,144 +1,130 @@
-# NEON AOP site configuration for wildfire crosswalk analysis
-# Site boundaries and fire history information
+# NEON AOP Crosswalk Configuration
+# Public repository configuration for NEON AOP data integration
+# All data referenced here is publicly available through NEON Data Portal
 
-sites:
-  - code: GRSM
-    name: "Great Smoky Mountains"
-    domain: D07
-    state: TN
-    fire_events:
-      - name: "Chimney Tops 2 Fire"
-        year: 2016
-        month: 11
-        area_ha: 7000
-        severity: "high"
-    aoi: 
-      # TODO: Verify exact AOI bounds with NEON site boundaries
-      minx: -83.50
-      miny: 35.55
-      maxx: -83.45
-      maxy: 35.60
-    years: [2015, 2017]  # Pre/post fire
-    grid: "sentinel2_10m"
-    notes: "Major fire in 2016 affected large area of park"
-    
-  - code: SOAP
-    name: "Soaproot Saddle"
-    domain: D17
-    state: CA
-    fire_events:
-      - name: "Creek Fire"
-        year: 2020
-        month: 9
-        area_ha: 153000
-        severity: "extreme"
-      - name: "Blue Fire"
-        year: 2021
-        month: 7
-        area_ha: 100
-        severity: "low"
-    aoi:
-      # TODO: Verify exact AOI bounds with NEON site boundaries
-      minx: -119.26
-      miny: 37.03
-      maxx: -119.21
-      maxy: 37.08
-    years: [2019, 2021, 2022]  # Pre/during/post fire
-    grid: "landsat_30m"
-    notes: "Creek Fire was one of largest CA fires; using Landsat for broader coverage"
-    
-  - code: SJER
-    name: "San Joaquin Experimental Range"
-    domain: D17
-    state: CA
-    fire_events: 
-      - name: "Multiple small fires"
-        year: "various"
-        notes: "Fire-prone ecosystem with frequent small fires"
-    aoi:
-      # TODO: Verify exact AOI bounds with NEON site boundaries
-      minx: -119.74
-      miny: 37.10
-      maxx: -119.69
-      maxy: 37.15
-    years: [2018, 2020, 2022]
-    grid: "sentinel2_10m"
-    notes: "Mediterranean climate, oak woodland/grassland, frequent fire regime"
-    
-  - code: SYCA
-    name: "Sycamore Creek"
-    domain: D14
-    state: AZ
-    fire_events:
-      - name: "Sand Stone Fire"
-        year: 2024
-        month: 6
-        area_ha: 500
-        severity: "moderate"
-    aoi:
-      # TODO: Verify exact AOI bounds with NEON site boundaries
-      minx: -111.51
-      miny: 33.74
-      maxx: -111.46
-      maxy: 33.79
-    years: [2023, 2024]  # Pre/post fire
-    grid: "sentinel2_10m"
-    notes: "Desert/riparian ecosystem, recent fire provides current data"
+# Global settings
+processing:
+  target_grids: ["sentinel2_10m", "landsat_30m"]
+  resampling_methods: ["average", "bilinear", "cubic"]
+  quality_filters:
+    cloud_cover_threshold: 20
+    data_quality_minimum: 0.8
 
-# Grid specifications
-grids:
-  sentinel2_10m:
-    resolution: 10
-    crs: "EPSG:32610"  # UTM Zone 10N for CA sites
-    resampling: "bilinear"
-    
-  landsat_30m:
-    resolution: 30
-    crs: "EPSG:32610"
-    resampling: "cubic"
-
-# Temporal matching parameters
-temporal:
-  max_days_difference: 30  # Maximum days between satellite and AOP acquisition
-  seasons:
-    - name: "growing"
-      months: [5, 6, 7, 8, 9]
-    - name: "dormant"
-      months: [11, 12, 1, 2, 3]
-
-# Feature extraction parameters
-features:
-  chm:
-    heights: [2, 5, 10]  # Height thresholds for canopy cover
-    percentiles: [10, 25, 50, 75, 90]
-    texture_window: 5
-    
-  spectral:
-    indices: ["ndvi", "nbr", "ndwi", "evi", "savi", "msavi"]
-    texture_distances: [1, 3, 5]
-    texture_properties: ["contrast", "homogeneity", "energy", "correlation"]
-
-# Crosswalk parameters
 crosswalk:
-  satellite_features:
-    - "ndvi"
-    - "nbr"
-    - "ndwi"
-    - "evi"
-    - "b4"  # Red
-    - "b8"  # NIR
-    - "b11" # SWIR1
-    - "b12" # SWIR2
-    
-  target_variables:
-    - "chm_p50"          # Median canopy height
-    - "chm_p90"          # 90th percentile height
-    - "canopy_cover_gt5m" # Canopy cover > 5m
-    - "chm_std"          # Canopy height variability
-    - "ndvi_aop"         # AOP-derived NDVI
-    - "nbr_aop"          # AOP-derived NBR
-    
+  model_types: ["linear", "ensemble"]
   validation:
-    test_fraction: 0.2
-    cv_folds: 5
-    metrics: ["r2", "mae", "rmse", "bias"]
+    test_size: 0.2
+    cross_validation_folds: 5
+    random_state: 42
+  feature_selection:
+    correlation_threshold: 0.8
+    variance_threshold: 0.01
+
+paths:
+  models_root: "data/models/aop_crosswalk"
+  processed_data_root: "data/processed/aop"
+  outputs_root: "data/outputs/aop_crosswalk"
+  logs_root: "logs/aop_crosswalk"
+
+neon_api:
+  base_url: "https://data.neonscience.org/api/v0"
+  timeout: 30
+  max_retries: 3
+
+gee:
+  project: "wildfire-risk-prediction"
+  asset_collection: "projects/neon-prod-earthengine/assets"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Public NEON AOP sites for crosswalk analysis
+# These sites are publicly available and commonly used for research
+sites:
+  - code: "SRER"
+    name: "Santa Rita Experimental Range"
+    description: "Desert grassland and shrubland ecosystem in Arizona, excellent for vegetation studies"
+    location:
+      lat: 31.8214
+      lon: -110.8661
+      elevation: 1100  # meters
+    bounds: [-111.51, 31.74, -111.46, 31.79]  # [minx, miny, maxx, maxy]
+    aop_data:
+      - year: 2021
+        chm_product: "DP3.30024.001"  # Canopy Height Model
+        hsi_product: "DP3.30026.001"  # Hyperspectral Reflectance
+        rgb_product: "DP3.30010.001"  # RGB Camera Imagery
+        lidar_product: "DP1.30003.001"  # Discrete Return LiDAR
+        data_path: "data/raw/aop/SRER/2021"
+        processed_path: "data/processed/aop/SRER/2021"
+      - year: 2022
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/SRER/2022"
+        processed_path: "data/processed/aop/SRER/2022"
+    target_grid: "sentinel2_10m"
+    priority: "high"
+    research_focus: ["vegetation structure", "biomass estimation", "ecosystem monitoring"]
+
+  - code: "JORN"
+    name: "Jornada Experimental Range"
+    description: "Chihuahuan Desert ecosystem in New Mexico, important for arid land studies"
+    location:
+      lat: 32.6147
+      lon: -106.7400
+      elevation: 1358  # meters
+    bounds: [-106.85, 32.55, -106.75, 32.65]
+    aop_data:
+      - year: 2021
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/JORN/2021"
+        processed_path: "data/processed/aop/JORN/2021"
+    target_grid: "sentinel2_10m"
+    priority: "medium"
+    research_focus: ["desert ecology", "vegetation change", "climate adaptation"]
+
+  - code: "ONAQ"
+    name: "Onaqui Airstrip"
+    description: "Sagebrush steppe ecosystem in Utah, representative of western rangelands"
+    location:
+      lat: 40.4567
+      lon: -112.4567
+      elevation: 1600  # meters
+    bounds: [-112.50, 40.40, -112.45, 40.50]
+    aop_data:
+      - year: 2021
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/ONAQ/2021"
+        processed_path: "data/processed/aop/ONAQ/2021"
+    target_grid: "sentinel2_10m"
+    priority: "medium"
+    research_focus: ["rangeland management", "sagebrush ecology", "wildlife habitat"]
+
+  - code: "SJER"
+    name: "San Joaquin Experimental Range"
+    description: "Oak woodland ecosystem in California, important for Mediterranean climate studies"
+    location:
+      lat: 37.1089
+      lon: -119.7328
+      elevation: 400  # meters
+    bounds: [-119.75, 37.10, -119.70, 37.15]
+    aop_data:
+      - year: 2021
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/SJER/2021"
+        processed_path: "data/processed/aop/SJER/2021"
+    target_grid: "sentinel2_10m"
+    priority: "medium"
+    research_focus: ["oak woodland ecology", "Mediterranean ecosystems", "biodiversity monitoring"]
