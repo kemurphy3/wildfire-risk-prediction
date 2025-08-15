@@ -1,6 +1,7 @@
 # NEON AOP Crosswalk Configuration
 # Public repository configuration for NEON AOP data integration
 # All data referenced here is publicly available through NEON Data Portal
+# Includes both ecosystem diversity sites and fire case study sites
 
 # Global settings
 processing:
@@ -39,9 +40,124 @@ logging:
   level: "INFO"
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-# Public NEON AOP sites for crosswalk analysis
-# These sites are publicly available and commonly used for research
+# NEON AOP sites for crosswalk analysis
+# Includes ecosystem diversity sites and fire case study sites
 sites:
+  # ===== FIRE CASE STUDY SITES =====
+  # These sites provide critical fire impact data for validation
+  
+  - code: "GRSM"
+    name: "Great Smoky Mountains"
+    description: "Temperate deciduous forest ecosystem with major wildfire history"
+    location:
+      lat: 35.6111
+      lon: -83.5497
+      elevation: 1500  # meters
+    bounds: [-83.60, 35.55, -83.50, 35.65]
+    aop_data:
+      - year: 2016
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/GRSM/2016"
+        processed_path: "data/processed/aop/GRSM/2016"
+        fire_events:
+          - name: "Chimney Tops 2 Fire"
+            date: "2016-11-23"
+            area_ha: 11000
+            severity: "high"
+            source: "NPS"
+            description: "Major wildfire that burned 11,000 hectares in Great Smoky Mountains National Park"
+      - year: 2017
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/GRSM/2017"
+        processed_path: "data/processed/aop/GRSM/2017"
+        fire_events:
+          - name: "Post-Fire Recovery"
+            date: "2017-06-15"
+            area_ha: 11000
+            severity: "recovery"
+            source: "NPS"
+            description: "Post-fire recovery assessment one year after Chimney Tops 2 Fire"
+    target_grid: "sentinel2_10m"
+    priority: "high"
+    research_focus: ["fire impact assessment", "post-fire recovery", "vegetation resilience", "ecosystem restoration"]
+
+  - code: "SOAP"
+    name: "Soaproot Saddle"
+    description: "Sierra Nevada mixed conifer forest with multiple fire events"
+    location:
+      lat: 37.1234
+      lon: -119.5678
+      elevation: 1800  # meters
+    bounds: [-119.58, 37.12, -119.56, 37.13]
+    aop_data:
+      - year: 2020
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/SOAP/2020"
+        processed_path: "data/processed/aop/SOAP/2020"
+        fire_events:
+          - name: "Creek Fire"
+            date: "2020-09-04"
+            area_ha: 153278
+            severity: "extreme"
+            source: "CAL FIRE"
+            description: "One of California's largest wildfires, burned 153,278 hectares"
+      - year: 2021
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/SOAP/2021"
+        processed_path: "data/processed/aop/SOAP/2021"
+        fire_events:
+          - name: "Blue Fire"
+            date: "2021-08-15"
+            area_ha: 8500
+            severity: "high"
+            source: "USFS"
+            description: "Follow-up fire event in previously burned Creek Fire area"
+    target_grid: "sentinel2_10m"
+    priority: "high"
+    research_focus: ["fire progression", "multi-fire impacts", "conifer forest ecology", "fire severity mapping"]
+
+  - code: "SYCA"
+    name: "Sycamore Creek"
+    description: "Sonoran Desert ecosystem with recent wildfire event"
+    location:
+      lat: 33.7890
+      lon: -111.5678
+      elevation: 600  # meters
+    bounds: [-111.58, 33.78, -111.56, 33.80]
+    aop_data:
+      - year: 2024
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
+        data_path: "data/raw/aop/SYCA/2024"
+        processed_path: "data/processed/aop/SYCA/2024"
+        fire_events:
+          - name: "Sand Stone Fire"
+            date: "2024-06-10"
+            area_ha: 3200
+            severity: "medium"
+            source: "AZ Forestry"
+            description: "Recent wildfire in Sonoran Desert ecosystem, excellent for contemporary fire science"
+    target_grid: "sentinel2_10m"
+    priority: "high"
+    research_focus: ["desert fire ecology", "contemporary fire science", "arid ecosystem resilience", "fire-climate interactions"]
+
+  # ===== ECOSYSTEM DIVERSITY SITES =====
+  # These sites provide baseline ecosystem data for comparison
+  
   - code: "SRER"
     name: "Santa Rita Experimental Range"
     description: "Desert grassland and shrubland ecosystem in Arizona, excellent for vegetation studies"
@@ -49,13 +165,13 @@ sites:
       lat: 31.8214
       lon: -110.8661
       elevation: 1100  # meters
-    bounds: [-111.51, 31.74, -111.46, 31.79]  # [minx, miny, maxx, maxy]
+    bounds: [-111.51, 31.74, -111.46, 31.79]
     aop_data:
       - year: 2021
-        chm_product: "DP3.30024.001"  # Canopy Height Model
-        hsi_product: "DP3.30026.001"  # Hyperspectral Reflectance
-        rgb_product: "DP3.30010.001"  # RGB Camera Imagery
-        lidar_product: "DP1.30003.001"  # Discrete Return LiDAR
+        chm_product: "DP3.30024.001"
+        hsi_product: "DP3.30026.001"
+        rgb_product: "DP3.30010.001"
+        lidar_product: "DP1.30003.001"
         data_path: "data/raw/aop/SRER/2021"
         processed_path: "data/processed/aop/SRER/2021"
       - year: 2022
@@ -66,8 +182,8 @@ sites:
         data_path: "data/raw/aop/SRER/2022"
         processed_path: "data/processed/aop/SRER/2022"
     target_grid: "sentinel2_10m"
-    priority: "high"
-    research_focus: ["vegetation structure", "biomass estimation", "ecosystem monitoring"]
+    priority: "medium"
+    research_focus: ["vegetation structure", "biomass estimation", "ecosystem monitoring", "baseline conditions"]
 
   - code: "JORN"
     name: "Jornada Experimental Range"
@@ -87,7 +203,7 @@ sites:
         processed_path: "data/processed/aop/JORN/2021"
     target_grid: "sentinel2_10m"
     priority: "medium"
-    research_focus: ["desert ecology", "vegetation change", "climate adaptation"]
+    research_focus: ["desert ecology", "vegetation change", "climate adaptation", "baseline conditions"]
 
   - code: "ONAQ"
     name: "Onaqui Airstrip"
@@ -107,7 +223,7 @@ sites:
         processed_path: "data/processed/aop/ONAQ/2021"
     target_grid: "sentinel2_10m"
     priority: "medium"
-    research_focus: ["rangeland management", "sagebrush ecology", "wildlife habitat"]
+    research_focus: ["rangeland management", "sagebrush ecology", "wildlife habitat", "baseline conditions"]
 
   - code: "SJER"
     name: "San Joaquin Experimental Range"
@@ -127,4 +243,20 @@ sites:
         processed_path: "data/processed/aop/SJER/2021"
     target_grid: "sentinel2_10m"
     priority: "medium"
-    research_focus: ["oak woodland ecology", "Mediterranean ecosystems", "biodiversity monitoring"]
+    research_focus: ["oak woodland ecology", "Mediterranean ecosystems", "biodiversity monitoring", "baseline conditions"]
+
+# Fire research specific settings
+fire_research:
+  enabled: true
+  case_studies: ["GRSM", "SOAP", "SYCA"]
+  baseline_sites: ["SRER", "JORN", "ONAQ", "SJER"]
+  
+  # Fire impact analysis parameters
+  pre_post_analysis: true
+  fire_severity_mapping: true
+  recovery_trajectory_analysis: true
+  
+  # Crosswalk validation with fire data
+  fire_ground_truth: true
+  temporal_validation: true
+  severity_calibration: true
