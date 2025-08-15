@@ -216,6 +216,7 @@ This system implements cutting-edge wildfire prediction research:
 - **Deep Learning Models**: ConvLSTM for capturing spatiotemporal fire spread patterns
 - **Satellite-Derived Features**: VIIRS fire detections, Sentinel-5P CO levels, ECOSTRESS water stress
 - **Social & Environmental Data**: WUI proximity, social vulnerability index, lightning density
+- **NEON AOP Integration**: High-resolution airborne LiDAR and hyperspectral data for calibration
 
 ### Historical Baselines
 We maintain implementations of classical models for comparison and validation:
@@ -223,6 +224,31 @@ We maintain implementations of classical models for comparison and validation:
 - KBDI drought index (Keetch & Byram, 1968) - Fundamental drought metric
 - Nelson dead fuel moisture (2000) - Physical moisture modeling
 - Rothermel spread model (1972) - Fire behavior foundations
+
+## NEON AOP Integration
+
+This project integrates high-resolution airborne data from NEON's Airborne Observation Platform (AOP) to calibrate and validate satellite-derived vegetation indices. The crosswalk models improve fire risk predictions by incorporating fine-scale canopy structure and hyperspectral signatures.
+
+### Target Sites
+- **GRSM**: Great Smoky Mountains (2016 Chimney Tops 2 Fire)
+- **SOAP**: Soaproot Saddle (2020 Creek Fire, 2021 Blue Fire)  
+- **SJER**: San Joaquin Experimental Range (fire-prone ecosystem)
+- **SYCA**: Sycamore Creek (2024 Sand Stone Fire)
+
+### AOP Features
+- **Canopy Structure**: Height percentiles, cover fraction, complexity metrics from LiDAR
+- **Hyperspectral Indices**: High-resolution NDVI, NBR, NDWI, and other vegetation indices
+- **Texture Analysis**: GLCM-based texture features for heterogeneity assessment
+- **Crosswalk Models**: Machine learning models that map satellite to AOP-derived features
+
+### Privacy Note
+Raw NEON AOP data is stored in a private repository. This public repository contains only:
+- Configuration files and processing code
+- Aggregated 10-30m features  
+- Trained crosswalk models
+- Sample tiles for demonstration
+
+See PRIVATE_DATA.md for information about accessing raw AOP data.
 
 ## License
 
