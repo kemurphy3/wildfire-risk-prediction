@@ -1,0 +1,144 @@
+# NEON AOP site configuration for wildfire crosswalk analysis
+# Site boundaries and fire history information
+
+sites:
+  - code: GRSM
+    name: "Great Smoky Mountains"
+    domain: D07
+    state: TN
+    fire_events:
+      - name: "Chimney Tops 2 Fire"
+        year: 2016
+        month: 11
+        area_ha: 7000
+        severity: "high"
+    aoi: 
+      # TODO: Verify exact AOI bounds with NEON site boundaries
+      minx: -83.50
+      miny: 35.55
+      maxx: -83.45
+      maxy: 35.60
+    years: [2015, 2017]  # Pre/post fire
+    grid: "sentinel2_10m"
+    notes: "Major fire in 2016 affected large area of park"
+    
+  - code: SOAP
+    name: "Soaproot Saddle"
+    domain: D17
+    state: CA
+    fire_events:
+      - name: "Creek Fire"
+        year: 2020
+        month: 9
+        area_ha: 153000
+        severity: "extreme"
+      - name: "Blue Fire"
+        year: 2021
+        month: 7
+        area_ha: 100
+        severity: "low"
+    aoi:
+      # TODO: Verify exact AOI bounds with NEON site boundaries
+      minx: -119.26
+      miny: 37.03
+      maxx: -119.21
+      maxy: 37.08
+    years: [2019, 2021, 2022]  # Pre/during/post fire
+    grid: "landsat_30m"
+    notes: "Creek Fire was one of largest CA fires; using Landsat for broader coverage"
+    
+  - code: SJER
+    name: "San Joaquin Experimental Range"
+    domain: D17
+    state: CA
+    fire_events: 
+      - name: "Multiple small fires"
+        year: "various"
+        notes: "Fire-prone ecosystem with frequent small fires"
+    aoi:
+      # TODO: Verify exact AOI bounds with NEON site boundaries
+      minx: -119.74
+      miny: 37.10
+      maxx: -119.69
+      maxy: 37.15
+    years: [2018, 2020, 2022]
+    grid: "sentinel2_10m"
+    notes: "Mediterranean climate, oak woodland/grassland, frequent fire regime"
+    
+  - code: SYCA
+    name: "Sycamore Creek"
+    domain: D14
+    state: AZ
+    fire_events:
+      - name: "Sand Stone Fire"
+        year: 2024
+        month: 6
+        area_ha: 500
+        severity: "moderate"
+    aoi:
+      # TODO: Verify exact AOI bounds with NEON site boundaries
+      minx: -111.51
+      miny: 33.74
+      maxx: -111.46
+      maxy: 33.79
+    years: [2023, 2024]  # Pre/post fire
+    grid: "sentinel2_10m"
+    notes: "Desert/riparian ecosystem, recent fire provides current data"
+
+# Grid specifications
+grids:
+  sentinel2_10m:
+    resolution: 10
+    crs: "EPSG:32610"  # UTM Zone 10N for CA sites
+    resampling: "bilinear"
+    
+  landsat_30m:
+    resolution: 30
+    crs: "EPSG:32610"
+    resampling: "cubic"
+
+# Temporal matching parameters
+temporal:
+  max_days_difference: 30  # Maximum days between satellite and AOP acquisition
+  seasons:
+    - name: "growing"
+      months: [5, 6, 7, 8, 9]
+    - name: "dormant"
+      months: [11, 12, 1, 2, 3]
+
+# Feature extraction parameters
+features:
+  chm:
+    heights: [2, 5, 10]  # Height thresholds for canopy cover
+    percentiles: [10, 25, 50, 75, 90]
+    texture_window: 5
+    
+  spectral:
+    indices: ["ndvi", "nbr", "ndwi", "evi", "savi", "msavi"]
+    texture_distances: [1, 3, 5]
+    texture_properties: ["contrast", "homogeneity", "energy", "correlation"]
+
+# Crosswalk parameters
+crosswalk:
+  satellite_features:
+    - "ndvi"
+    - "nbr"
+    - "ndwi"
+    - "evi"
+    - "b4"  # Red
+    - "b8"  # NIR
+    - "b11" # SWIR1
+    - "b12" # SWIR2
+    
+  target_variables:
+    - "chm_p50"          # Median canopy height
+    - "chm_p90"          # 90th percentile height
+    - "canopy_cover_gt5m" # Canopy cover > 5m
+    - "chm_std"          # Canopy height variability
+    - "ndvi_aop"         # AOP-derived NDVI
+    - "nbr_aop"          # AOP-derived NBR
+    
+  validation:
+    test_fraction: 0.2
+    cv_folds: 5
+    metrics: ["r2", "mae", "rmse", "bias"]
