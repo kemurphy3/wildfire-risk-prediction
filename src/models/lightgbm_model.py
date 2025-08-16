@@ -1,5 +1,5 @@
-# LightGBM model for fire risk
-# basically gradient boosting but faster
+# LightGBM model for fire risk prediction
+# Gradient boosting implementation with optimized performance
 
 import os
 import pickle
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class LightGBMFireRiskModel:
-    # lightgbm wrapper for fire predictions
-    # handles both regression and classification
+    # LightGBM wrapper for fire risk predictions
+    # Handles both regression and classification tasks
     
     def __init__(
         self,
@@ -44,7 +44,7 @@ class LightGBMFireRiskModel:
         early_stopping_rounds: int = 10,
         eval_metric: Optional[str] = None
     ):
-        # setup lightgbm with basic params
+        # Initialize LightGBM with specified parameters
         self.model_type = model_type.lower()
         self.n_estimators = n_estimators
         self.max_depth = max_depth

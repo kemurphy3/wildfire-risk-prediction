@@ -1,5 +1,5 @@
-# dash app for wildfire risk viz
-# shows maps, charts, predictions, etc
+# Dash application for wildfire risk visualization
+# Displays interactive maps, charts, and real-time predictions
 
 import dash
 from dash import dcc, html, Input, Output, State, callback_context
