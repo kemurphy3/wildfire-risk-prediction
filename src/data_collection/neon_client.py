@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class NEONDataCollector:
-    """Downloads NEON data, handles retries, unzips files, the works."""
+    """Downloads NEON data with retry handling and automatic extraction."""
     
     def __init__(self, config: Dict):
         """
