@@ -1,7 +1,7 @@
 """
 Crosswalk models to match satellite data with airplane (AOP) measurements.
 
-Basically teaching satellites to see as well as low-flying planes. Pretty neat.
+Enables satellite data to achieve accuracy comparable to airborne measurements.
 Uses ML to learn the mapping between coarse satellite pixels and fine-scale AOP data.
 """
 
@@ -27,7 +27,7 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
     """
     Train a linear model to map satellite -> AOP data.
     
-    Using Ridge regression cuz it's simple and works well enough.
+    Uses Ridge regression for its simplicity and reliability.
     
     Args:
         X: satellite features 
@@ -80,13 +80,13 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
     # Get feature importance from coefficients
     feature_importance = {i: coef for i, coef in enumerate(model.coef_)}
     
-    # Stash metrics in the model for later (kinda hacky but works)
+    # Store metrics in the model for later use
     model.metrics_ = {
         'train_r2': train_r2,
         'test_r2': test_r2,
         'train_mae': train_mae,
         'test_mae': test_mae,
-        'scaler': scaler  # need this for predictions later!!
+        'scaler': scaler  # Required for predictions
     }
     
     return {
@@ -106,7 +106,7 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
 
 def fit_ensemble_crosswalk(X: np.ndarray, y: np.ndarray) -> GradientBoostingRegressor:
     """
-    Train ensemble model for the complicated stuff.
+    Train ensemble model for complex non-linear relationships.
     
     GradientBoosting b/c it handles non-linear relationships better.
     
@@ -144,8 +144,8 @@ def calibrate_satellite_indices(
     Main calibration function - trains models to map satellite -> AOP.
     
     Args:
-        satellite_df: satellite data (the crappy resolution stuff)
-        aop_df: AOP ground truth (the good stuff)
+        satellite_df: satellite data (coarse resolution)
+        aop_df: AOP ground truth (high resolution)
         target_vars: which AOP variables to predict
         model_type: 'linear' for simple, 'ensemble' for complex patterns
         
@@ -200,7 +200,7 @@ def calibrate_satellite_indices(
         
         y = aop_subset[target_var].values
         
-        # Drop NaNs (there's always some...)
+        # Drop NaNs
         valid_mask = ~(np.isnan(X).any(axis=1) | np.isnan(y))
         X_valid = X[valid_mask]
         y_valid = y[valid_mask]
@@ -274,7 +274,7 @@ def validate_crosswalk(
                 scaler = model_info['metrics']['scaler']
                 X_scaled = scaler.transform(X_valid)
             else:
-                # no scaler? use raw (shouldn't happen tho)
+                # No scaler available, use raw data
                 X_scaled = X_valid
             y_pred = model.predict(X_scaled)
             model_type = 'ridge'
@@ -308,7 +308,7 @@ def validate_crosswalk(
         }
         validation_results.append(result)
         
-        # Make a nice scatter plot
+        # Create scatter plot
         plt.figure(figsize=(8, 6))
         plt.scatter(y_true_valid, y_pred, alpha=0.6)
         plt.plot([y_true_valid.min(), y_true_valid.max()], 
@@ -521,11 +521,11 @@ def apply_crosswalk_models(satellite_data: pd.DataFrame,
                 enhanced_data[f"{target_var}_calibrated"] = predictions
                 
             else:
-                logger.warning(f"Weird model type for {target_var}??")
+                logger.warning(f"Unknown model type for {target_var}")
                 
         except Exception as e:
             logger.error(f"Failed to apply {target_var}: {e}")
-            # add dummy values so we don't crash
+            # Add default values to maintain data integrity
             enhanced_data[f"{target_var}_calibrated"] = satellite_data.iloc[:, 0].values
     
     logger.info(f"Added {len(crosswalk_models)} calibrated features")
