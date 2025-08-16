@@ -1,4 +1,4 @@
-# Notebook Development Guide for Claude
+# Notebook Development Guide
 
 This document explains what each Jupyter notebook in the `notebooks/` directory should accomplish. Use this as a reference when developing the empty notebooks.
 
@@ -47,7 +47,7 @@ The notebooks form a complete workflow for the NEON AOP Crosswalk system:
 
 ## Notebook 03: Satellite Data Processing (`02_satellite_data_processing.ipynb`)
 
-**Status**: **EMPTY** - Ready for Claude development
+**Status**: **EMPTY** - Ready for development
 
 **Purpose**: Process and prepare satellite data for crosswalk analysis
 
@@ -105,7 +105,7 @@ ee.Initialize()
 
 ## Notebook 04: Feature Engineering (`03_feature_engineering.ipynb`)
 
-**Status**: **EMPTY** - Ready for Claude development
+**Status**: **EMPTY** - Ready for development
 
 **Purpose**: Extract and engineer features from AOP and satellite data
 
@@ -158,7 +158,7 @@ from src.features.aop_features import (
 
 ## Notebook 05: Model Training (`04_model_training.ipynb`)
 
-**Status**: **EMPTY** - Ready for Claude development
+**Status**: **EMPTY** - Ready for development
 
 **Purpose**: Train crosswalk models to map satellite features to AOP features
 
@@ -211,7 +211,7 @@ from src.features.aop_crosswalk import (
 
 ## Notebook 06: Model Evaluation (`05_model_evaluation.ipynb`)
 
-**Status**: **EMPTY** - Ready for Claude development
+**Status**: **EMPTY** - Ready for development
 
 **Purpose**: Comprehensive evaluation of crosswalk model performance
 
