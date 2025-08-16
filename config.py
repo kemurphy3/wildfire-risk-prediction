@@ -1,9 +1,5 @@
-"""
-Configuration file for the wildfire risk prediction system.
-
-This file contains API keys, settings, and configuration options
-for various data sources and services.
-"""
+# config settings for the wildfire app
+# api keys, dashboard settings, etc
 
 import os
 from typing import Dict, Any

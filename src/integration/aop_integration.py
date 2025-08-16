@@ -1,9 +1,8 @@
 """
-AOP Integration Module for Wildfire Risk Prediction System.
+AOP Integration - connects airplane data with wildfire predictions.
 
-This module integrates the NEON AOP crosswalk system with the main
-wildfire risk prediction pipeline, providing enhanced features and
-improved accuracy.
+Glues together the NEON crosswalk stuff with our main prediction pipeline.
+Makes everything work better by using high-res data to fix satellite blindspots.
 """
 
 import numpy as np
@@ -28,14 +27,14 @@ logger = logging.getLogger(__name__)
 
 
 class AOPIntegrationManager:
-    """Manages integration between AOP crosswalk and wildfire risk system."""
+    """Main integration manager - handles all the AOP/satellite mashup stuff."""
     
     def __init__(self, config_path: str):
         """
-        Initialize AOP integration manager.
+        Setup the integration manager.
         
         Args:
-            config_path: Path to AOP configuration file
+            config_path: yaml config file location
         """
         self.config_path = Path(config_path)
         with open(self.config_path, 'r') as f:
@@ -45,129 +44,128 @@ class AOPIntegrationManager:
         self.processed_dir = Path(self.config['paths']['processed_data_root'])
         self.outputs_dir = Path(self.config['paths']['outputs_root'])
         
-        # Ensure directories exist
+        # make sure dirs exist
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.outputs_dir.mkdir(parents=True, exist_ok=True)
         
-        # Load crosswalk models
+        # load any existing models
         self.crosswalk_models = self._load_crosswalk_models()
         
-        # Initialize feature engine
+        # init feature engine
         self.feature_engine = FireRiskFeatureEngine()
         
-        logger.info("AOP Integration Manager initialized successfully")
+        logger.info("Integration manager ready!")
     
     def _load_crosswalk_models(self) -> Dict:
-        """Load available crosswalk models."""
+        """Load any existing crosswalk models."""
         if not self.models_dir.exists():
-            logger.warning("Models directory does not exist")
+            logger.warning("No models dir yet")
             return {}
         
         try:
             models = load_crosswalk_models(self.models_dir)
-            logger.info(f"Loaded {len(models)} crosswalk models")
+            logger.info(f"Found {len(models)} models")
             return models
         except Exception as e:
-            logger.error(f"Error loading crosswalk models: {e}")
+            logger.error(f"Couldn't load models: {e}")
             return {}
     
     def get_enhanced_features(self, satellite_data: pd.DataFrame, 
                              site_code: str, year: int) -> pd.DataFrame:
         """
-        Generate enhanced features using AOP crosswalk models.
+        Enhance satellite data with AOP-calibrated features.
         
         Args:
-            satellite_data: DataFrame with satellite indices
-            site_code: NEON site code
-            year: Data year
+            satellite_data: regular satellite indices
+            site_code: which NEON site
+            year: what year
             
         Returns:
-            DataFrame with enhanced features
+            DataFrame with extra calibrated columns
         """
-        logger.info(f"Generating enhanced features for {site_code} {year}")
+        logger.info(f"Enhancing features for {site_code} {year}")
         
-        # Start with a copy of satellite data
+        # work on a copy
         enhanced_data = satellite_data.copy()
         
-        # Apply crosswalk models if available
+        # apply crosswalk if we have models
         if self.crosswalk_models:
             enhanced_data = apply_crosswalk_models(satellite_data, self.crosswalk_models)
-            logger.info(f"Applied crosswalk models to generate {len(self.crosswalk_models)} enhanced features")
+            logger.info(f"Applied {len(self.crosswalk_models)} crosswalk models")
         else:
-            logger.warning("No crosswalk models available, using original satellite data")
+            logger.warning("No models - using raw satellite data")
         
-        # Add AOP-derived features if available
+        # try to add direct AOP features
         aop_features = self._get_aop_features(site_code, year)
         if aop_features is not None:
             enhanced_data = self._merge_aop_features(enhanced_data, aop_features)
-            logger.info("Merged AOP-derived features")
+            logger.info("Added AOP features")
         
-        # Add feature quality indicators (add as new columns, don't modify existing data)
+        # add metadata about data quality
         enhanced_data = self._add_quality_indicators(enhanced_data, site_code, year)
         
         return enhanced_data
     
     def _get_aop_features(self, site_code: str, year: int) -> Optional[pd.DataFrame]:
-        """Get AOP features for a specific site and year."""
+        """Try to load processed AOP features."""
         aop_dir = self.processed_dir / site_code / str(year)
         
         if not aop_dir.exists():
-            logger.debug(f"No AOP data found for {site_code} {year}")
+            logger.debug(f"No AOP data for {site_code} {year}")
             return None
         
-        # Look for feature files
+        # look for processed features
         feature_files = list(aop_dir.glob("*_features.gpkg"))
         if not feature_files:
-            logger.debug(f"No feature files found in {aop_dir}")
+            logger.debug(f"No features in {aop_dir}")
             return None
         
         try:
             import geopandas as gpd
             features_df = gpd.read_file(feature_files[0])
-            logger.info(f"Loaded AOP features: {list(features_df.columns)}")
+            logger.info(f"Got AOP features: {list(features_df.columns)}")
             return features_df
         except Exception as e:
-            logger.error(f"Error loading AOP features: {e}")
+            logger.error(f"Failed loading AOP features: {e}")
             return None
     
     def _merge_aop_features(self, satellite_data: pd.DataFrame, 
                            aop_features: pd.DataFrame) -> pd.DataFrame:
-        """Merge AOP features with satellite data."""
-        # For now, don't add AOP features to avoid column explosion
-        # In a full implementation, this would do spatial joining
-        logger.debug("AOP features merging disabled for testing")
+        """Merge AOP with satellite data (TODO: implement spatial join)."""
+        # disabled for now - would explode the columns
+        logger.debug("AOP merge disabled (not implemented yet)")
         return satellite_data
     
     def _add_quality_indicators(self, data: pd.DataFrame, site_code: str, 
                                year: int) -> pd.DataFrame:
-        """Add feature quality indicators."""
-        # Add only essential quality indicators
+        """Add metadata about data quality/availability."""
+        # work on copy
         data = data.copy()
         
-        # Add crosswalk model availability indicator
+        # how many models do we have?
         data['crosswalk_models_available'] = len(self.crosswalk_models)
         
-        # Add AOP data availability indicator
+        # is AOP data there?
         aop_dir = self.processed_dir / site_code / str(year)
         data['aop_data_available'] = aop_dir.exists()
         
-        # Add feature enhancement timestamp
+        # timestamp
         data['enhancement_timestamp'] = datetime.now().isoformat()
         
         return data
     
     def validate_integration(self, site_code: str, year: int) -> Dict:
         """
-        Validate the integration between AOP and wildfire risk systems.
+        Check if everything's working properly.
         
         Args:
-            site_code: NEON site code
-            year: Data year
+            site_code: NEON site
+            year: year to check
             
         Returns:
-            Validation results dictionary
+            dict with validation results
         """
-        logger.info(f"Validating integration for {site_code} {year}")
+        logger.info(f"Checking integration: {site_code} {year}")
         
         validation_results = {
             'site_code': site_code,
@@ -179,24 +177,24 @@ class AOPIntegrationManager:
             'integration_status': 'unknown'
         }
         
-        # Check AOP data availability
+        # check for AOP data
         aop_dir = self.processed_dir / site_code / str(year)
         if aop_dir.exists():
             validation_results['aop_data_available'] = True
             
-            # Check feature files
+            # count feature files
             feature_files = list(aop_dir.glob("*_features.gpkg"))
             validation_results['feature_files_count'] = len(feature_files)
             
-            # Check metadata
+            # metadata?
             metadata_files = list(aop_dir.glob("metadata.json"))
             validation_results['metadata_available'] = len(metadata_files) > 0
         
-        # Check crosswalk model availability
+        # check models
         if self.crosswalk_models:
             validation_results['feature_enhancement'] = True
             
-            # Validate model performance
+            # get model stats
             model_performance = {}
             for target_var, model_info in self.crosswalk_models.items():
                 if hasattr(model_info, 'metrics_'):
@@ -205,11 +203,11 @@ class AOPIntegrationManager:
                         'test_mae': model_info.metrics_.get('test_mae', float('inf'))
                     }
                 else:
-                    model_performance[target_var] = {'status': 'metrics_not_available'}
+                    model_performance[target_var] = {'status': 'no_metrics'}
             
             validation_results['model_performance'] = model_performance
         
-        # Determine integration status
+        # figure out overall status
         if validation_results['aop_data_available'] and validation_results['feature_enhancement']:
             validation_results['integration_status'] = 'fully_integrated'
         elif validation_results['aop_data_available']:
@@ -219,42 +217,42 @@ class AOPIntegrationManager:
         else:
             validation_results['integration_status'] = 'not_integrated'
         
-        logger.info(f"Integration validation: {validation_results['integration_status']}")
+        logger.info(f"Status: {validation_results['integration_status']}")
         return validation_results
     
     def generate_integration_report(self, site_codes: List[str], years: List[int]) -> str:
         """
-        Generate comprehensive integration report.
+        Generate a nice HTML report of what's working.
         
         Args:
-            site_codes: List of site codes to report on
-            years: List of years to report on
+            site_codes: which sites to check
+            years: which years
             
         Returns:
-            HTML report content
+            HTML report as string
         """
-        logger.info("Generating integration report")
+        logger.info("Making integration report...")
         
-        # Validate all sites and years
+        # check all combos
         validation_results = []
         for site in site_codes:
             for year in years:
                 validation = self.validate_integration(site, year)
                 validation_results.append(validation)
         
-        # Generate HTML report
+        # make the HTML
         html_content = self._generate_html_report(validation_results)
         
-        # Save report
+        # save it
         report_path = self.outputs_dir / f"aop_integration_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
         with open(report_path, 'w') as f:
             f.write(html_content)
         
-        logger.info(f"Integration report saved to {report_path}")
+        logger.info(f"Report saved: {report_path}")
         return html_content
     
     def _generate_html_report(self, validation_results: List[Dict]) -> str:
-        """Generate HTML report from validation results."""
+        """Build the actual HTML report."""
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         html = f"""
@@ -282,7 +280,7 @@ class AOPIntegrationManager:
             </div>
         """
         
-        # Summary statistics
+        # calc summary stats
         total_sites = len(set(r['site_code'] for r in validation_results))
         total_years = len(set(r['year'] for r in validation_results))
         fully_integrated = sum(1 for r in validation_results if r['integration_status'] == 'fully_integrated')
@@ -357,26 +355,26 @@ class AOPIntegrationManager:
     def export_enhanced_features(self, site_code: str, year: int, 
                                 output_format: str = 'csv') -> Optional[Path]:
         """
-        Export enhanced features for a specific site and year.
+        Export enhanced features to file.
         
         Args:
-            site_code: NEON site code
-            year: Data year
-            output_format: Output format ('csv', 'parquet', 'geopackage')
+            site_code: which site
+            year: which year
+            output_format: 'csv', 'parquet', or 'geopackage'
             
         Returns:
-            Path to exported file or None if failed
+            Path to saved file (or None if it failed)
         """
-        logger.info(f"Exporting enhanced features for {site_code} {year}")
+        logger.info(f"Exporting features: {site_code} {year}")
         
-        # This would typically load satellite data from the main system
-        # For now, we'll create a sample dataset
+        # TODO: load real satellite data from main system
+        # using fake data for now
         satellite_data = self._create_sample_satellite_data()
         
-        # Generate enhanced features
+        # enhance the features
         enhanced_data = self.get_enhanced_features(satellite_data, site_code, year)
         
-        # Export based on format
+        # export to requested format
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         if output_format == 'csv':
@@ -387,25 +385,25 @@ class AOPIntegrationManager:
             enhanced_data.to_parquet(output_path, index=False)
         elif output_format == 'geopackage':
             output_path = self.outputs_dir / f"{site_code}_{year}_enhanced_features_{timestamp}.gpkg"
-            # Convert to GeoDataFrame if geometry column exists
+            # need geometry column for geopackage
             if 'geometry' in enhanced_data.columns:
                 import geopandas as gpd
                 gdf = gpd.GeoDataFrame(enhanced_data)
                 gdf.to_file(output_path, driver='GPKG')
             else:
-                logger.warning("No geometry column found, saving as regular DataFrame")
+                logger.warning("No geometry - falling back to CSV")
                 enhanced_data.to_csv(output_path.with_suffix('.csv'), index=False)
                 output_path = output_path.with_suffix('.csv')
         else:
-            logger.error(f"Unsupported output format: {output_format}")
+            logger.error(f"Unknown format: {output_format}")
             return None
         
-        logger.info(f"Enhanced features exported to {output_path}")
+        logger.info(f"Saved to {output_path}")
         return output_path
     
     def _create_sample_satellite_data(self) -> pd.DataFrame:
-        """Create sample satellite data for testing."""
-        # Generate sample data with typical satellite indices
+        """Make fake satellite data for testing."""
+        # generate some realistic-ish values
         n_samples = 100
         
         data = {
@@ -423,10 +421,10 @@ class AOPIntegrationManager:
 
 
 def main():
-    """Main function for AOP integration."""
+    """CLI entry point."""
     import argparse
     
-    parser = argparse.ArgumentParser(description="AOP Integration for Wildfire Risk System")
+    parser = argparse.ArgumentParser(description="AOP Integration CLI")
     parser.add_argument("--config", default="configs/aop_sites.yaml", help="Configuration file")
     parser.add_argument("--sites", nargs="+", help="Site codes to process")
     parser.add_argument("--years", nargs="+", type=int, help="Years to process")
@@ -435,28 +433,28 @@ def main():
     
     args = parser.parse_args()
     
-    # Initialize integration manager
+    # setup manager
     manager = AOPIntegrationManager(args.config)
     
     if args.action == "validate":
-        # Validate integration for specified sites and years
+        # check each site/year combo
         for site in args.sites:
             for year in args.years:
                 validation = manager.validate_integration(site, year)
                 print(f"{site} {year}: {validation['integration_status']}")
     
     elif args.action == "report":
-        # Generate integration report
+        # make report
         report = manager.generate_integration_report(args.sites, args.years)
-        print("Integration report generated successfully")
+        print("Report generated!")
     
     elif args.action == "export":
-        # Export enhanced features
+        # export features
         for site in args.sites:
             for year in args.years:
                 output_path = manager.export_enhanced_features(site, year, args.output_format)
                 if output_path:
-                    print(f"Exported features for {site} {year} to {output_path}")
+                    print(f"Exported {site} {year} -> {output_path}")
 
 
 if __name__ == "__main__":

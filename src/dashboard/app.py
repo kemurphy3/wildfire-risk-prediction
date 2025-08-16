@@ -1,14 +1,5 @@
-"""
-Main dashboard application for wildfire risk prediction.
-
-This module creates a comprehensive Plotly Dash application that provides
-interactive visualizations for wildfire risk assessment, including:
-- Risk maps and spatial analysis
-- Time series analysis
-- Feature importance visualization
-- Model comparison and evaluation
-- Real-time prediction interface
-"""
+# dash app for wildfire risk viz
+# shows maps, charts, predictions, etc
 
 import dash
 from dash import dcc, html, Input, Output, State, callback_context

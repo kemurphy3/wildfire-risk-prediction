@@ -1,21 +1,5 @@
-"""
-Satellite Data Collection Module for Wildfire Risk Prediction
-
-This module provides integration with Google Earth Engine API to collect
-satellite imagery from multiple sources (Sentinel-2, MODIS, Landsat) and
-calculate vegetation indices relevant to fire risk assessment.
-
-Educational Note: This module demonstrates best practices for remote sensing
-data collection and processing, including cloud masking, temporal compositing,
-and vegetation index calculation. The vegetation indices help assess vegetation
-health, moisture content, and fire susceptibility.
-
-References:
-- NDVI: Tucker (1979) - Remote sensing of leaf water content
-- NBR: Key & Benson (2006) - Landscape assessment methodology
-- NDWI: Gao (1996) - NDWI for vegetation water content
-- LST: Wan & Dozier (1996) - Land surface temperature from MODIS
-"""
+# satellite data fetcher using Google Earth Engine
+# pulls data from sentinel, modis, landsat etc
 
 import logging
 import warnings
@@ -36,27 +20,10 @@ warnings.filterwarnings("ignore", category=UserWarning, module="ee")
 
 
 class SatelliteDataClient:
-    """
-    Client for collecting satellite data from Google Earth Engine.
-    
-    This class provides methods to download and process satellite imagery
-    from multiple sources, with built-in cloud masking, temporal compositing,
-    and vegetation index calculation capabilities.
-    
-    Attributes:
-        initialized (bool): Whether Earth Engine has been initialized
-        cache_dir (str): Directory for caching downloaded data
-        max_retries (int): Maximum number of retry attempts for API calls
-    """
+    # GEE client for getting satellite imagery
     
     def __init__(self, cache_dir: str = "./cache/satellite", max_retries: int = 3):
-        """
-        Initialize the satellite data client.
-        
-        Args:
-            cache_dir: Directory for caching downloaded data
-            max_retries: Maximum number of retry attempts for API calls
-        """
+        # setup GEE connection
         self.cache_dir = cache_dir
         self.max_retries = max_retries
         self.initialized = False

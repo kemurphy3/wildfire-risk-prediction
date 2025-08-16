@@ -1,6 +1,6 @@
 # Project Structure
 
-Your wildfire risk prediction system is organized for maximum clarity and maintainability.
+Here's how the wildfire risk prediction system is organized.
 
 ## Directory Overview
 
@@ -13,7 +13,7 @@ wildfire-risk-prediction/
 │   ├── features/                 # Feature engineering
 │   ├── models/                   # Machine learning models
 │   └── __init__.py
-├── tests/                        # Comprehensive test suite
+├── tests/                        # Test suite
 ├── notebooks/                    # Jupyter notebooks for exploration
 ├── README.md                     # Main project documentation
 ├── QUICK_START.md               # 5-minute setup guide
@@ -27,38 +27,38 @@ wildfire-risk-prediction/
 ## Core Components
 
 ### src/api/
-**FastAPI REST API** - Professional endpoints for programmatic access
-- `main.py` - Complete API implementation with 20+ endpoints
+FastAPI REST API for programmatic access
+- `main.py` - API implementation with multiple endpoints
 - RESTful design with automatic documentation
-- Production-ready with error handling and validation
+- Error handling and validation
 
 ### src/dashboard/
-**Interactive Web Dashboard** - Real-time risk visualization
-- `app.py` - Main Dash application with 6 functional tabs
+Interactive web dashboard for real-time risk visualization
+- `app.py` - Main Dash application
 - `callbacks.py` - Interactive functionality and data updates
 - `data_integration.py` - Real-time data from multiple sources
 
 ### src/data_collection/
-**Data Integration** - Multiple data sources for comprehensive analysis
+Data integration from multiple sources
 - `neon_client.py` - NEON ecological data access
 - `satellite_client.py` - Google Earth Engine satellite imagery
 - Real-time weather, topography, and fire history data
 
 ### src/features/
-**Feature Engineering** - Domain-specific fire risk calculations
-- `fire_features.py` - 20+ engineered features for fire risk
+Feature engineering for fire risk calculations
+- `fire_features.py` - Engineered features for fire risk
 - Scientific algorithms (FWI, FMC, KBDI, etc.)
 - Topographical and environmental factor calculations
 
 ### src/models/
-**Machine Learning Models** - State-of-the-art prediction algorithms
+Machine learning models for prediction
 - `baseline_model.py` - Random Forest with feature importance
-- `xgboost_model.py` - High-performance gradient boosting
-- `lightgbm_model.py` - Modern gradient boosting framework
+- `xgboost_model.py` - Gradient boosting
+- `lightgbm_model.py` - LightGBM framework
 - `convlstm_model.py` - Deep learning for spatiotemporal data
-- `ensemble.py` - Advanced ensemble methods (voting, stacking, modern combinations)
+- `ensemble.py` - Ensemble methods (voting, stacking)
 
-## Data Flow Architecture
+## Data Flow
 
 ```
 Satellite Data (Earth Engine) → Feature Engineering → ML Models → Dashboard/API
@@ -71,34 +71,30 @@ NEON Data                 ↗                                  ↘
 ## Key Features by Component
 
 ### API (src/api/)
-- **20+ REST endpoints** for all system functions
-- **Automatic documentation** (Swagger/ReDoc)
-- **Input validation** and error handling
-- **Rate limiting** and security features
-- **Production deployment** ready
+- REST endpoints for all system functions
+- Automatic documentation (Swagger/ReDoc)
+- Input validation and error handling
+- Rate limiting and security features
 
 ### Dashboard (src/dashboard/)
-- **6 functional tabs** with real-time updates
-- **Interactive maps** and visualizations
-- **Live data integration** from multiple sources
-- **Responsive design** for all devices
-- **Professional UI/UX** with modern styling
+- Multiple functional tabs with real-time updates
+- Interactive maps and visualizations
+- Live data integration from multiple sources
+- Responsive design for all devices
 
 ### Models (src/models/)
-- **5 different ML algorithms** for diverse use cases
-- **Hyperparameter tuning** and optimization
-- **Feature importance** analysis
-- **Model persistence** and loading
-- **Performance metrics** and validation
-- **Modern ensemble methods** with LightGBM integration
+- Different ML algorithms for diverse use cases
+- Hyperparameter tuning and optimization
+- Feature importance analysis
+- Model persistence and loading
+- Performance metrics and validation
 
 ### Features (src/features/)
-- **19+ engineered features** for comprehensive risk assessment
-- **Modern fire indices** (2020-2024 research) including VPD, HDW, ML-based FPI
-- **Satellite-derived features** from VIIRS, Sentinel-5P, and ECOSTRESS
-- **Social & environmental data** including WUI proximity and vulnerability indices
-- **Real-time calculations** from environmental data
-- **Domain expertise** in wildfire science
+- Engineered features for risk assessment
+- Modern fire indices based on recent research
+- Satellite-derived features from VIIRS, Sentinel-5P, and ECOSTRESS
+- Social & environmental data including WUI proximity
+- Real-time calculations from environmental data
 
 ## Configuration Management
 
@@ -114,64 +110,54 @@ NEON Data                 ↗                                  ↘
 - No hardcoded secrets
 - Git-safe configuration
 
-## Testing and Quality
+## Testing
 
 ### tests/
-- **Unit tests** for all components
-- **Integration tests** for data flow
-- **Model validation** tests
-- **API endpoint** testing
-- **Dashboard functionality** testing
+- Unit tests for all components
+- Integration tests for data flow
+- Model validation tests
+- API endpoint testing
+- Dashboard functionality testing
 
 ### Quality Standards
-- **Type hints** throughout codebase
-- **Comprehensive docstrings** for all functions
-- **Error handling** and logging
-- **Code coverage** >80%
-- **PEP 8** compliance
+- Type hints throughout codebase
+- Docstrings for all functions
+- Error handling and logging
+- PEP 8 compliance
 
 ## Scalability Features
 
 ### Performance
-- **Async API endpoints** for high concurrency
-- **Data caching** for improved response times
-- **Batch processing** for multiple locations
-- **Efficient algorithms** for real-time use
+- Async API endpoints for concurrency
+- Data caching for improved response times
+- Batch processing for multiple locations
+- Efficient algorithms for real-time use
 
 ### Deployment
-- **Docker support** for containerization
-- **Environment configuration** for different deployments
-- **Health checks** and monitoring
-- **Production logging** and error tracking
+- Docker support for containerization
+- Environment configuration for different deployments
+- Health checks and monitoring
+- Production logging and error tracking
 
-## Use Cases Supported
+## Use Cases
 
 ### Research & Education
-- **Academic projects** with real satellite data
-- **Environmental studies** with comprehensive datasets
-- **Machine learning** research and experimentation
+- Academic projects with real satellite data
+- Environmental studies with comprehensive datasets
+- Machine learning research and experimentation
 
 ### Professional Applications
-- **Fire management** and planning
-- **Environmental monitoring** and assessment
-- **Risk assessment** for insurance and planning
-- **Data science** portfolio and demonstrations
+- Fire management and planning
+- Environmental monitoring and assessment
+- Risk assessment for insurance and planning
+- Data science portfolio and demonstrations
 
 ### Production Deployment
-- **Government agencies** for fire management
-- **Environmental consulting** firms
-- **Research institutions** for ongoing monitoring
-- **Emergency response** planning systems
-
-## Why This Structure is Excellent
-
-1. **Modular Design** - Easy to maintain and extend
-2. **Clear Separation** - Each component has a single responsibility
-3. **Professional Quality** - Production-ready code patterns
-4. **Comprehensive Testing** - Ensures reliability and quality
-5. **Documentation** - Clear understanding for users and contributors
-6. **Scalability** - Can grow from prototype to production system
+- Government agencies for fire management
+- Environmental consulting firms
+- Research institutions for ongoing monitoring
+- Emergency response planning systems
 
 ---
 
-*This structure demonstrates professional software engineering practices and is perfect for portfolios, technical interviews, and real-world deployment.*
+This structure keeps things modular and maintainable while supporting both research and production use cases.

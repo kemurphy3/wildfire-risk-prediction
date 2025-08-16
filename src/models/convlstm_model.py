@@ -1,10 +1,4 @@
-"""
-ConvLSTM model for spatiotemporal wildfire risk prediction.
-
-This module implements a Convolutional LSTM (ConvLSTM) model for
-spatiotemporal prediction of wildfire risk using satellite and
-environmental data.
-"""
+# ConvLSTM for fire risk - handles spatial + temporal patterns
 
 import numpy as np
 import pandas as pd
@@ -21,27 +15,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 class ConvLSTMFireRiskModel:
-    """
-    ConvLSTM model for spatiotemporal wildfire risk prediction.
-    
-    This class provides a ConvLSTM implementation for wildfire risk assessment
-    that can handle both spatial and temporal data. It combines convolutional
-    layers for spatial feature extraction with LSTM layers for temporal
-    dependencies, making it suitable for predicting fire risk across geographic
-    areas over time.
-    
-    Attributes:
-        model_type (str): Type of prediction task ('regression' or 'classification')
-        model (tf.keras.Model): The trained ConvLSTM model
-        scaler (StandardScaler): Feature scaler for input data
-        feature_names (List[str]): Names of input features
-        is_trained (bool): Whether the model has been trained
-        training_history (Dict): Training history and metrics
-        input_shape (Tuple): Shape of input data (time_steps, height, width, channels)
-        time_steps (int): Number of time steps for temporal sequences
-        spatial_dims (Tuple): Spatial dimensions (height, width)
-        channels (int): Number of input channels/features
-    """
+    # deep learning model for spatiotemporal fire risk
+    # combines CNN + LSTM
     
     def __init__(
         self,
@@ -59,24 +34,7 @@ class ConvLSTMFireRiskModel:
         validation_split: float = 0.2,
         random_state: int = 42
     ):
-        """
-        Initialize the ConvLSTM model.
-        
-        Args:
-            model_type: Type of prediction task ('regression' or 'classification')
-            time_steps: Number of time steps for temporal sequences
-            spatial_dims: Spatial dimensions (height, width)
-            channels: Number of input channels/features
-            filters: Number of convolutional filters
-            kernel_size: Size of convolutional kernels
-            lstm_units: Number of LSTM units
-            dropout_rate: Dropout rate for regularization
-            learning_rate: Learning rate for optimization
-            batch_size: Batch size for training
-            epochs: Number of training epochs
-            validation_split: Fraction of data for validation
-            random_state: Random seed for reproducibility
-        """
+        # lots of params here... basically sets up the network architecture
         self.model_type = model_type.lower()
         self.time_steps = time_steps
         self.spatial_dims = spatial_dims

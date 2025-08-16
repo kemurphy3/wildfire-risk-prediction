@@ -1,9 +1,4 @@
-"""
-Ensemble methods for wildfire risk prediction.
-
-This module implements various ensemble strategies including voting, stacking,
-and weighted averaging to combine multiple base models for improved performance.
-"""
+# ensemble model stuff - combines multiple models to (hopefully) get better predictions
 
 import numpy as np
 import pandas as pd
@@ -25,19 +20,14 @@ from .lightgbm_model import LightGBMFireRiskModel
 
 
 class SklearnWrapper:
-    """
-    Wrapper class to make our custom models sklearn-compatible.
-    
-    This allows our custom models to work with sklearn's ensemble methods
-    like VotingRegressor and StackingRegressor.
-    """
+    # wrapper to make our models play nice with sklearn
     
     def __init__(self, model):
         self.model = model
         self._is_fitted = False
     
     def fit(self, X, y):
-        """Fit the wrapped model."""
+        # fit the model
         # For our custom models, we need to prepare data first
         if hasattr(self.model, 'prepare_data'):
             X_train, X_val, X_test, y_train, y_val, y_test = self.model.prepare_data(
@@ -54,7 +44,7 @@ class SklearnWrapper:
         return self
     
     def predict(self, X):
-        """Make predictions using the wrapped model."""
+        # run predictions
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
         
@@ -64,7 +54,7 @@ class SklearnWrapper:
             return self.model.predict(X)
     
     def predict_proba(self, X):
-        """Get prediction probabilities (for classification)."""
+        # get probabilities for classification tasks
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
         
@@ -81,24 +71,10 @@ class SklearnWrapper:
 
 
 class EnsembleFireRiskModel:
-    """
-    Ensemble model for wildfire risk prediction.
-    
-    This class provides ensemble implementations that combine multiple machine
-    learning models for improved wildfire risk assessment. It includes voting,
-    stacking, and weighted averaging strategies.
-    
-    Attributes:
-        model_type (str): Type of prediction task ('regression' or 'classification')
-        ensemble_method (str): Ensemble method ('voting', 'stacking', or 'weighted')
-        base_models (List): List of base models
-        ensemble_model: The trained ensemble model
-        scaler (StandardScaler): Feature scaler for input data
-        feature_names (List[str]): Names of input features
-        is_trained (bool): Whether the model has been trained
-        model_weights (List[float]): Weights for weighted averaging
-        base_predictions (Dict): Predictions from individual base models
-    """
+    '''
+    combines different models for fire risk prediction. 
+    supports voting, stacking, weighted avg
+    '''
     
     def __init__(
         self,
@@ -108,16 +84,7 @@ class EnsembleFireRiskModel:
         model_weights: Optional[List[float]] = None,
         random_state: int = 42
     ):
-        """
-        Initialize the ensemble model.
-        
-        Args:
-            model_type: Type of prediction task ('regression' or 'classification')
-            ensemble_method: Ensemble method ('voting', 'stacking', or 'weighted')
-            base_models: List of base models to ensemble
-            model_weights: Weights for weighted averaging
-            random_state: Random seed for reproducibility
-        """
+        # init ensemble with specified params
         self.model_type = model_type.lower()
         self.ensemble_method = ensemble_method.lower()
         self.random_state = random_state
@@ -182,7 +149,7 @@ class EnsembleFireRiskModel:
         return models
     
     def _validate_base_models(self) -> None:
-        """Validate that all base models have the correct type."""
+        # check models are the right type
         for i, item in enumerate(self.base_models):
             # Handle both tuple format (name, model) and direct model objects
             if isinstance(item, tuple) and len(item) == 2:
@@ -202,7 +169,7 @@ class EnsembleFireRiskModel:
                 pass
     
     def _build_ensemble_model(self):
-        """Build the ensemble model based on the chosen method."""
+        # build ensemble based on method (voting/stacking/etc)
         # Create sklearn-compatible estimators from our custom models
         sklearn_estimators = []
         for name, model in self.base_models:

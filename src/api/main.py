@@ -1,23 +1,7 @@
-"""
-FastAPI Application for Wildfire Risk Prediction
-
-This module provides a comprehensive REST API for wildfire risk assessment,
-including prediction endpoints, model management, and real-time risk monitoring.
-
-Educational Note: This API demonstrates best practices for building production
-machine learning APIs, including proper error handling, request validation,
-response caching, and comprehensive documentation. The API serves as an
-interface between the machine learning models and end users.
-
-Key Features:
-- Single location and batch predictions
-- Area-based risk assessment
-- Model performance monitoring
-- Real-time risk updates
-- Comprehensive error handling
-- Request/response validation
-- API documentation with OpenAPI/Swagger
-"""
+# FastAPI for wildfire risk predictions
+# 
+# Basic API to get fire risk scores for locations. Nothing too fancy,
+# just takes in coords/weather and spits out risk levels.
 
 import logging
 import warnings
@@ -52,50 +36,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # Initialize FastAPI app
 app = FastAPI(
     title="Wildfire Risk Prediction API",
-    description="""
-    Comprehensive API for wildfire risk assessment using machine learning models
-    and ecological data fusion. This API provides real-time fire risk predictions
-    for locations, areas, and regions based on weather, vegetation, and topographical data.
-    
-    ## Educational Purpose
-    
-    This API is designed for educational purposes to demonstrate best practices
-    in building machine learning APIs for environmental applications. It is NOT
-    intended for operational fire prediction or emergency response.
-    
-    ## Key Features
-    
-    * **Real-time Predictions**: Get fire risk assessments for specific locations
-    * **Batch Processing**: Process multiple locations simultaneously
-    * **Area Analysis**: Assess fire risk across geographic regions
-    * **Model Monitoring**: Track model performance and updates
-    * **Comprehensive Documentation**: Full API reference with examples
-    
-    ## Data Sources
-    
-    * NEON ecological data (ground-based sensors)
-    * Satellite imagery (Sentinel-2, MODIS, Landsat)
-    * Weather observations and forecasts
-    * Topographical data (DEM, slope, aspect)
-    * Vegetation indices and fuel moisture
-    
-    ## Models
-    
-    * Random Forest (baseline)
-    * XGBoost (gradient boosting)
-    * ConvLSTM (deep learning for spatiotemporal prediction)
-    * Ensemble methods (combining all models)
-    """,
-    version="1.0.0",
-    contact={
-        "name": "Wildfire Risk Prediction Project",
-        "url": "https://github.com/your-username/wildfire-risk-prediction",
-        "email": "your-email@example.com"
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    }
+    description="API for checking fire risk. Give it a location, get back a risk score. Built for learning/research, not real emergency use!",
+    version="1.0.0"
 )
 
 # Add middleware
@@ -120,7 +62,7 @@ cache_ttl = timedelta(hours=1)  # Cache predictions for 1 hour
 
 # Pydantic models for request/response validation
 class Location(BaseModel):
-    """Geographic location for fire risk assessment."""
+    # just lat/lon coords
     latitude: confloat(ge=-90, le=90) = Field(..., description="Latitude in decimal degrees")
     longitude: confloat(ge=-180, le=180) = Field(..., description="Longitude in decimal degrees")
     elevation: Optional[confloat(ge=0)] = Field(None, description="Elevation in meters above sea level")
@@ -132,7 +74,7 @@ class Location(BaseModel):
         return v
 
 class WeatherData(BaseModel):
-    """Weather observations for fire risk calculation."""
+    # weather info for risk calc
     temperature: confloat(ge=-50, le=60) = Field(..., description="Temperature in Celsius")
     relative_humidity: confloat(ge=0, le=100) = Field(..., description="Relative humidity as percentage")
     wind_speed: confloat(ge=0, le=100) = Field(..., description="Wind speed in km/h")
@@ -140,7 +82,7 @@ class WeatherData(BaseModel):
     vapor_pressure_deficit: Optional[confloat(ge=0)] = Field(None, description="Vapor pressure deficit in kPa")
 
 class FireRiskRequest(BaseModel):
-    """Request for single location fire risk assessment."""
+    # single location request
     location: Location
     weather: Optional[WeatherData] = Field(None, description="Weather data (optional, will use nearest station if not provided)")
     date: Optional[str] = Field(None, description="Date for assessment (YYYY-MM-DD, defaults to current date)")

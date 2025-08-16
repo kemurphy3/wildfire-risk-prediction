@@ -1,239 +1,235 @@
 # Wildfire Risk Prediction System
 
-A comprehensive wildfire risk prediction system that integrates real-time environmental data, satellite imagery, and machine learning models to provide accurate wildfire risk assessments.
+Real-time wildfire risk predictions using ML, satellite data, and environmental sensors. Built this to help predict fire risks before they get out of hand.
 
-## Key Features
+## What's in here?
 
-- **Real-Time Data Integration**: Live weather, satellite, and environmental data
-- **Advanced ML Models**: Random Forest, XGBoost, LightGBM, ConvLSTM, and Ensemble methods
-- **NEON AOP Crosswalk**: High-resolution airborne data integration for enhanced accuracy
-- **Fire Case Studies**: Real wildfire events for validation and research
-- **Interactive Dashboard**: Plotly Dash-based web interface with real-time updates
-- **Comprehensive API**: FastAPI backend with automated model training and validation
-- **Modern Research Integration**: Latest scientific findings (2020-2024) and algorithms
+- **Real-time data** - pulls live weather, satellite imagery, and sensor data
+- **ML models** - Random Forest, XGBoost, LightGBM, ConvLSTM, and ensemble stuff
+- **NEON AOP crosswalk** - fancy airborne data that makes predictions way more accurate
+- **Fire case studies** - actual fire data for testing (scary how many there are...)
+- **Dashboard** - Plotly Dash UI that updates in real-time 
+- **API** - FastAPI backend, handles training and validation automatically
+- **Latest research** - implemented papers from 2020-2024 (the good stuff)
 
 ## NEON AOP Crosswalk System
 
-The system includes a sophisticated NEON AOP (Airborne Observation Platform) crosswalk framework that bridges high-resolution airborne data with satellite observations:
+Ok so this is pretty cool - we're using NEON's airplane data to calibrate satellite imagery. Basically teaching satellites to see better by comparing with super high-res airplane scans:
 
-### What is NEON AOP Crosswalk?
-- **High-Resolution Ground Truth**: 1-meter resolution airborne data (LiDAR, hyperspectral, RGB)
-- **Satellite Calibration**: Calibrates 10-30m satellite indices using airborne measurements
-- **Enhanced Accuracy**: Improves wildfire risk prediction through better vegetation characterization
-- **Public Data Access**: All NEON AOP data is publicly available through the NEON Data Portal
+### What's NEON AOP Crosswalk?
+- **High-res ground truth** - 1m resolution from planes (LiDAR, hyperspectral, RGB cameras)
+- **Satellite calibration** - trains 10-30m satellite data using the airplane measurements
+- **Better accuracy** - way better at spotting fire-prone vegetation patterns
+- **Free data!** - all NEON data is public (thank u science)
 
 ### Fire Case Study Sites (High Priority)
-- **GRSM**: Great Smoky Mountains - 2016 Chimney Tops 2 Fire (11,000 ha)
-- **SOAP**: Soaproot Saddle - 2020 Creek Fire (153,278 ha) & 2021 Blue Fire (8,500 ha)
-- **SYCA**: Sycamore Creek - 2024 Sand Stone Fire (3,200 ha)
+- **GRSM**: Great Smoky Mountains - 2016 Chimney Tops 2 Fire (11k hectares... yikes)
+- **SOAP**: Soaproot Saddle - 2020 Creek Fire (153k ha!!) & 2021 Blue Fire (8.5k ha)
+- **SYCA**: Sycamore Creek - 2024 Sand Stone Fire (3.2k ha)
 
 ### Ecosystem Diversity Sites (Baseline)
-- **SRER**: Santa Rita Experimental Range (Arizona) - Desert grassland ecosystem
-- **JORN**: Jornada Experimental Range (New Mexico) - Chihuahuan Desert
-- **ONAQ**: Onaqui Airstrip (Utah) - Sagebrush steppe
-- **SJER**: San Joaquin Experimental Range (California) - Oak woodland
+- **SRER**: Santa Rita Range, AZ - desert grassland
+- **JORN**: Jornada Range, NM - Chihuahuan Desert (hot & dry)
+- **ONAQ**: Onaqui, UT - sagebrush everywhere
+- **SJER**: San Joaquin, CA - oak trees & golden hills
 
 ### Data Products
-- **Canopy Height Model (CHM)**: 1m resolution vegetation height
-- **Hyperspectral Reflectance**: 426 bands (380-2510nm) for detailed spectral analysis
-- **RGB Camera Imagery**: 10cm resolution visual interpretation
-- **Discrete Return LiDAR**: High-density 3D point clouds
+- **CHM** - 1m res vegetation height maps
+- **Hyperspectral** - 426 bands!! (380-2510nm) for crazy detailed analysis
+- **RGB imagery** - 10cm resolution (you can see individual bushes)
+- **LiDAR point clouds** - super dense 3D data
 
 ### Crosswalk Models
-- **Linear Models**: Ridge regression for satellite-AOP mapping
-- **Ensemble Models**: Gradient Boosting for complex relationships
-- **Validation**: Comprehensive testing with R², MAE, and bias metrics
+- **Linear** - Ridge regression (simple but effective)
+- **Ensemble** - Gradient Boosting for the tricky stuff
+- **Validation** - R², MAE, bias... all the metrics
 
 ### Fire Research Capabilities
-- **Pre/Post-Fire Analysis**: Compare vegetation before and after fire events
-- **Fire Severity Mapping**: High-resolution severity assessment using AOP data
-- **Recovery Trajectory Analysis**: Track vegetation recovery over time
-- **Temporal Validation**: Validate crosswalk models across fire-impacted landscapes
+- **Before/after analysis** - see what changed from fires
+- **Severity mapping** - how bad did it burn? (spoiler: usually pretty bad)
+- **Recovery tracking** - watch nature bounce back over time
+- **Temporal validation** - make sure our models work across different fire events
 
 ## Installation
 
 ### Quick Start
 ```bash
-# Clone the repository
+# Grab the code
 git clone https://github.com/yourusername/wildfire-risk-prediction.git
 cd wildfire-risk-prediction
 
-# Install dependencies
+# Install deps (this takes a min)
 python install_dependencies.py
 
-# Set up environment variables
+# Setup env vars
 python create_env_file.py
 
-# Run the dashboard
+# Fire it up! (pun intended)
 python run_dashboard.py
 ```
 
 ### Dependencies
-- **Core**: `requirements.txt` - Essential packages for basic functionality
-- **Minimal**: `requirements-minimal.txt` - Core wildfire prediction capabilities
-- **Development**: `requirements-dev.txt` - Testing, linting, and development tools
+- **Core**: `requirements.txt` - the essentials
+- **Minimal**: `requirements-minimal.txt` - bare minimum to run predictions
+- **Dev**: `requirements-dev.txt` - testing, linting, all that jazz
 
 ## Usage
 
 ### NEON AOP Crosswalk
 ```bash
-# Download AOP data for fire case study sites
-make download-GRSM    # Great Smoky Mountains fire data
-make download-SOAP    # Soaproot Saddle fire data
-make download-SYCA    # Sycamore Creek fire data
+# Get fire site data (warning: these are BIG downloads)
+make download-GRSM    # Smoky Mountains fire
+make download-SOAP    # Soaproot fire (the big one)
+make download-SYCA    # Sycamore Creek
 
-# Download baseline ecosystem data
-make download-SRER    # Santa Rita Experimental Range
-make download-JORN    # Jornada Experimental Range
+# Get baseline sites
+make download-SRER    # Santa Rita
+make download-JORN    # Jornada 
 
-# Process AOP data and extract features
-make process
+# Process everything
+make process          # extract features
+make calibrate        # train models
+make validate         # check if it actually works
 
-# Train crosswalk models
-make calibrate
-
-# Validate models
-make validate
-
-# Run complete pipeline
-make all
+# Or just YOLO it
+make all             # does everything above
 ```
 
 ### Python API
 ```python
 from src.integration.aop_integration import AOPIntegrationManager
 
-# Initialize integration manager
+# Setup manager
 manager = AOPIntegrationManager('configs/aop_sites.yaml')
 
-# Generate enhanced features for fire-impacted sites
-enhanced_data = manager.get_enhanced_features(satellite_data, 'GRSM', 2016)  # Pre-fire
-enhanced_data = manager.get_enhanced_features(satellite_data, 'GRSM', 2017)  # Post-fire
+# Get enhanced features (before & after fire)
+enhanced_data = manager.get_enhanced_features(satellite_data, 'GRSM', 2016)  # before
+enhanced_data = manager.get_enhanced_features(satellite_data, 'GRSM', 2017)  # after
 
-# Validate integration
-validation = manager.validate_integration('SOAP', 2020)  # Creek Fire year
+# Check if everything's working
+validation = manager.validate_integration('SOAP', 2020)  # that massive Creek Fire
 ```
 
 ### Dashboard
-- **Real-Time Monitoring**: Live environmental data and risk assessments
-- **Interactive Maps**: Geographic visualization of risk factors
-- **Model Insights**: Feature importance and prediction explanations
-- **Data Export**: Download results in multiple formats
-- **Fire Impact Analysis**: Pre/post-fire vegetation change visualization
+- **Real-time monitoring** - watch fire risk live (kinda nerve-wracking tbh)
+- **Interactive maps** - click around, zoom in/out, the works
+- **Model insights** - see what features matter most
+- **Export data** - CSV, JSON, whatever you need
+- **Fire impact viz** - before/after comparisons (often depressing)
 
-## Scientific Foundation
+## The Science Behind It
 
-The system integrates cutting-edge research from 2020-2024:
+We've implemented a bunch of recent research (2020-2024). Here's what we're using:
 
 ### Modern Fire Indices
-- **Enhanced Fire Weather Index (FWI)**: Improved meteorological fire danger assessment
-- **Hot-Dry-Windy (HDW) Index**: Advanced wind-driven fire potential modeling
-- **ML-based Fire Potential Index (FPI)**: Machine learning enhanced fire risk prediction
+- **Enhanced FWI** - better weather-based fire danger (finally!)
+- **HDW Index** - for those crazy wind-driven fires
+- **ML Fire Potential** - because why not throw ML at everything?
 
-### Advanced Satellite Features
-- **VIIRS Fire Detections**: Real-time fire hotspot identification
-- **Sentinel-5P CO Levels**: Atmospheric carbon monoxide monitoring
-- **ECOSTRESS Water Stress**: Evapotranspiration-based drought assessment
+### Satellite Features
+- **VIIRS** - spots active fires in real-time
+- **Sentinel-5P** - tracks CO levels (smoke detection)
+- **ECOSTRESS** - measures plant water stress (thirsty plants = fire risk)
 
-### Environmental Integration
-- **Wildland-Urban Interface (WUI)**: Proximity to human development
-- **Social Vulnerability Index (SVI)**: Community resilience assessment
-- **Lightning Strike Density**: Natural ignition probability
+### Environmental Factors
+- **WUI** - how close to homes/buildings (super important)
+- **SVI** - which communities are most at risk
+- **Lightning density** - nature's fire starters
 
-### Fire Research Applications
-- **Fire Severity Assessment**: High-resolution mapping using AOP data
-- **Recovery Monitoring**: Track vegetation regeneration post-fire
-- **Fuel Load Estimation**: Precise biomass assessment for fire modeling
-- **Ecosystem Resilience**: Long-term impact assessment
+### Fire Research Apps
+- **Severity assessment** - detailed burn maps from AOP data
+- **Recovery monitoring** - watch the green come back
+- **Fuel load** - how much stuff is there to burn?
+- **Ecosystem resilience** - will it bounce back? (hopefully)
 
 ## Project Structure
 
 ```
 wildfire-risk-prediction/
 ├── src/
-│   ├── dashboard/          # Plotly Dash web interface
-│   ├── data_collection/    # Data acquisition modules
-│   ├── features/           # Feature engineering and AOP crosswalk
-│   ├── models/             # Machine learning models
-│   ├── integration/        # AOP integration and system coordination
-│   └── utils/              # Utility functions and geospatial tools
-├── configs/                # Configuration files
-├── tests/                  # Comprehensive test suite
-├── notebooks/              # Jupyter notebooks and examples
-├── data/                   # Data storage (not in Git)
-├── logs/                   # Processing logs
-└── docs/                   # Documentation
+│   ├── dashboard/          # web UI (Plotly Dash)
+│   ├── data_collection/    # data downloaders
+│   ├── features/           # feature eng + AOP stuff
+│   ├── models/             # ML models
+│   ├── integration/        # glue code for AOP
+│   └── utils/              # helpers, geo tools, etc
+├── configs/                # yaml configs
+├── tests/                  # tests (we actually have them!)
+├── notebooks/              # jupyter experiments
+├── data/                   # big files (gitignored)
+├── logs/                   # debug logs
+└── docs/                   # more docs
 ```
 
 ## Testing
 
-Run the comprehensive test suite:
+Run tests (yes, we have tests!):
 ```bash
-# All tests
+# Run everything
 python -m pytest
 
-# NEON AOP specific tests
+# Just AOP tests
 python -m pytest tests/test_aop_integration.py -v
 
-# Specific component tests
+# Feature tests only
 python -m pytest tests/test_features/ -v
 ```
 
-## Documentation
+## Docs
 
-- **Quick Start**: `QUICK_START.md` - Get up and running quickly
-- **Project Structure**: `PROJECT_STRUCTURE.md` - Detailed component overview
-- **NEON AOP**: `PUBLIC_DATA_ACCESS.md` - Data access and fire case studies
-- **API Reference**: `docs/api/` - Complete API documentation
+- **Quick Start**: `QUICK_START.md` - get going fast
+- **Project Structure**: `PROJECT_STRUCTURE.md` - what's where
+- **NEON AOP**: `PUBLIC_DATA_ACCESS.md` - how to get the data
+- **API Docs**: `docs/api/` - all the functions
 
 ## Data Sources
 
-### Public Data (No API Keys Required)
-- **NEON AOP Data**: Publicly available through NEON Data Portal
-- **Fire Case Studies**: Real wildfire events with pre/post AOP data
-- **OpenWeatherMap**: Free tier available (API key required)
-- **Google Earth Engine**: Free for research and education
+### Public Data (mostly free!)
+- **NEON AOP** - all public through their portal
+- **Fire case studies** - real fires with before/after data
+- **OpenWeatherMap** - free tier (need API key tho)
+- **Google Earth Engine** - free for research/edu
 
-### Data Privacy
-- **No Sensitive Data**: Repository contains only code and configuration
-- **Public Access**: All referenced data sources are publicly available
-- **User Control**: Users download and process their own data locally
+### Privacy stuff
+- **No sensitive data** - just code & configs here
+- **All public sources** - nothing proprietary 
+- **Your data stays local** - download & process on your machine
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines and code of conduct.
+PRs welcome! Check out contributing guidelines first.
 
-### Development Setup
+### Dev Setup
 ```bash
-# Install development dependencies
+# Get dev deps
 pip install -r requirements-dev.txt
 
-# Run linting
+# Format code (plz do this)
 black src/ tests/
 flake8 src/ tests/
 
-# Run tests with coverage
+# Test w/ coverage
 pytest --cov=src --cov-report=html
 ```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see LICENSE file. Basically do whatever.
 
-## Acknowledgments
+## Thanks to
 
-- **NEON**: National Ecological Observatory Network for AOP data
-- **Fire Management Agencies**: CAL FIRE, USFS, NPS, AZ Forestry for fire data
-- **OpenWeatherMap**: Weather data and API
-- **Google Earth Engine**: Satellite data and processing platform
-- **Research Community**: Latest wildfire science and methodologies
+- **NEON** - for the amazing AOP data
+- **Fire agencies** - CAL FIRE, USFS, NPS, AZ Forestry (the real heroes)
+- **OpenWeatherMap** - weather data
+- **Google Earth Engine** - satellite processing power
+- **Researchers** - standing on the shoulders of giants here
 
-## Support
+## Need Help?
 
-- **Issues**: GitHub Issues for bug reports and feature requests
-- **Discussions**: GitHub Discussions for questions and community support
-- **Documentation**: Comprehensive guides and examples in the docs folder
+- **Bugs/features** - GitHub Issues
+- **Questions** - GitHub Discussions 
+- **Docs** - check the docs/ folder
 
 ---
 
-**Note**: This is a public repository. All NEON AOP data referenced is publicly available through the NEON Data Portal. The system includes real fire case studies for enhanced research applications and validation.
+**BTW**: All the NEON data we use is public. The fire case studies are real events - stay safe out there folks.

@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Launcher script for the Wildfire Risk Prediction Dashboard.
-
-This script starts the interactive web dashboard for wildfire risk assessment.
-"""
+# starts the dashboard
 
 import sys
 import os
@@ -12,7 +8,6 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 def main():
-    """Launch the dashboard application."""
     try:
         from dashboard.app import app
         
