@@ -5,12 +5,6 @@ This module implements a Random Forest model as the baseline approach
 for wildfire risk assessment. Random Forests are robust, interpretable,
 and provide good baseline performance for ecological prediction tasks.
 
-Educational Note: Random Forests are an excellent starting point for
-ecological modeling because they handle non-linear relationships well,
-provide feature importance rankings, and are relatively robust to
-overfitting. This implementation demonstrates best practices for
-model development, validation, and interpretation.
-
 References:
 - Breiman (2001) - Random Forests
 - Cutler et al. (2007) - Random Forests for classification in ecology

@@ -5,11 +5,6 @@ This module implements comprehensive feature engineering for wildfire risk
 assessment, including fuel moisture calculations, fire weather indices,
 topographical features, and data fusion between ground and satellite observations.
 
-Educational Note: This module demonstrates the scientific principles behind
-fire risk assessment, including the relationship between weather conditions,
-vegetation characteristics, and fire behavior. Each feature is based on
-established fire science research and operational fire danger rating systems.
-
 Modern References (2020-2024):
 - Jain et al. (2020) - A review of machine learning applications in wildfire science and management
 - Huot et al. (2022) - Next Day Wildfire Spread: A Machine Learning Dataset to Predict Wildfire Spreading
