@@ -1,16 +1,5 @@
-"""
-LightGBM implementation for wildfire risk prediction.
-
-LightGBM is a state-of-the-art gradient boosting framework that uses
-tree-based learning algorithms. It's designed for efficiency and high
-performance, particularly well-suited for wildfire prediction due to
-its ability to handle categorical features and missing values.
-
-References:
-    - Ke et al. (2017): "LightGBM: A Highly Efficient Gradient Boosting Decision Tree"
-    - Sayad et al. (2023): "Predictive modeling of wildfire using ML/DL algorithms"
-    - Gholamnia et al. (2024): "ML approaches for wildfire susceptibility"
-"""
+# LightGBM model for fire risk
+# basically gradient boosting but faster
 
 import os
 import pickle
@@ -36,23 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class LightGBMFireRiskModel:
-    """
-    LightGBM model for wildfire risk prediction.
-    
-    This class provides a comprehensive LightGBM implementation for wildfire risk
-    assessment, including both regression and classification tasks. It features
-    advanced capabilities like early stopping, hyperparameter tuning, and SHAP
-    explainability.
-    
-    Attributes:
-        model_type (str): Type of prediction task ('regression' or 'classification')
-        model (lgb.LGBMRegressor or lgb.LGBMClassifier): The trained LightGBM model
-        scaler (StandardScaler): Feature scaler for input data
-        feature_names (List[str]): Names of input features
-        is_trained (bool): Whether the model has been trained
-        training_history (Dict): Training history and metrics
-        best_params (Dict): Best hyperparameters from tuning
-    """
+    # lightgbm wrapper for fire predictions
+    # handles both regression and classification
     
     def __init__(
         self,
@@ -70,24 +44,7 @@ class LightGBMFireRiskModel:
         early_stopping_rounds: int = 10,
         eval_metric: Optional[str] = None
     ):
-        """
-        Initialize the LightGBM model.
-        
-        Args:
-            model_type: Type of prediction task ('regression' or 'classification')
-            n_estimators: Number of boosting rounds
-            max_depth: Maximum depth of trees
-            learning_rate: Learning rate (eta)
-            num_leaves: Number of leaves in one tree
-            subsample: Subsample ratio of training instances
-            colsample_bytree: Subsample ratio of columns for each tree
-            reg_alpha: L1 regularization term
-            reg_lambda: L2 regularization term
-            random_state: Random seed for reproducibility
-            n_jobs: Number of parallel jobs
-            early_stopping_rounds: Number of rounds for early stopping
-            eval_metric: Evaluation metric for early stopping
-        """
+        # setup lightgbm with basic params
         self.model_type = model_type.lower()
         self.n_estimators = n_estimators
         self.max_depth = max_depth

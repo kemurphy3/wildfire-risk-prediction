@@ -1,14 +1,14 @@
 # Quick Start Guide
 
-Get your wildfire risk prediction system running in **5 minutes**!
+Get the wildfire risk prediction system running in about 5 minutes.
 
-## What You'll Have After This Guide
+## What you'll have when you're done
 
-- **Working dashboard** with real-time risk assessment
-- **Live satellite data** from Google Earth Engine
-- **Weather integration** from OpenWeather
-- **Machine learning models** making predictions
-- **Professional API** for programmatic access
+- A working dashboard with real-time risk assessment
+- Live satellite data from Google Earth Engine
+- Weather integration from OpenWeather
+- Machine learning models making predictions
+- An API for programmatic access
 
 ## Step 1: Setup (2 minutes)
 
@@ -60,13 +60,13 @@ python run_dashboard.py
 # Open in browser: http://localhost:8050
 ```
 
-## What You Can Do Now
+## What you can do now
 
 ### Dashboard Features
-- **Risk Assessment** - Interactive maps with real-time fire risk
-- **Environmental Monitoring** - Live weather and satellite data
-- **Predictions** - Custom risk assessments for any location
-- **Model Analysis** - Feature importance and performance metrics
+- Risk Assessment - Interactive maps with real-time fire risk
+- Environmental Monitoring - Live weather and satellite data
+- Predictions - Custom risk assessments for any location
+- Model Analysis - Feature importance and performance metrics
 
 ### API Access
 ```bash
@@ -105,14 +105,8 @@ pytest tests/ -v
 
 ## You're Ready!
 
-Your wildfire risk prediction system is now:
-- **Fully operational** with real data
-- **Production-ready** for deployment
-- **Portfolio-worthy** for demonstrations
-- **Scalable** for real-world use
-
-**Next steps**: Explore the dashboard, test the API, and customize for your needs!
+Your wildfire risk prediction system is now up and running. You can explore the dashboard, test the API, and customize it for your needs.
 
 ---
 
-*Need help? Check the main README.md for detailed documentation.*
+Need help? Check the main README.md for detailed documentation.

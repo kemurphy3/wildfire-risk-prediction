@@ -1,8 +1,8 @@
 """
-Crosswalk models for calibrating satellite indices with AOP ground truth.
+Crosswalk models to match satellite data with airplane (AOP) measurements.
 
-This module implements machine learning models that learn mappings between
-satellite-derived vegetation indices and high-resolution AOP measurements.
+Basically teaching satellites to see as well as low-flying planes. Pretty neat.
+Uses ML to learn the mapping between coarse satellite pixels and fine-scale AOP data.
 """
 
 import numpy as np
@@ -25,18 +25,20 @@ logger = logging.getLogger(__name__)
 
 def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
     """
-    Fit linear crosswalk model using Ridge regression.
+    Train a linear model to map satellite -> AOP data.
+    
+    Using Ridge regression cuz it's simple and works well enough.
     
     Args:
-        X: Feature matrix
-        y: Target variable
+        X: satellite features 
+        y: AOP ground truth
         
     Returns:
-        Dictionary containing model, metrics, and feature importance
+        dict with model, metrics, feature importance
     """
-    logger.info("Fitting linear crosswalk model")
+    logger.info("Training linear crosswalk...")
     
-    # Split data
+    # 80/20 split - pretty standard
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
@@ -46,7 +48,8 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Find optimal alpha using cross-validation
+    # Find best alpha w/ cross-validation
+    # TODO: maybe try elastic net too?
     alphas = np.logspace(-2, 3, 50)
     cv_scores = []
     
@@ -72,18 +75,18 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
     train_mae = mean_absolute_error(y_train, y_train_pred)
     test_mae = mean_absolute_error(y_test, y_test_pred)
     
-    logger.info(f"Linear crosswalk - Test R²: {test_r2:.3f}, Test MAE: {test_mae:.3f}")
+    logger.info(f"Linear model - R²: {test_r2:.3f}, MAE: {test_mae:.3f}")
     
-    # Feature importance (coefficients)
+    # Get feature importance from coefficients
     feature_importance = {i: coef for i, coef in enumerate(model.coef_)}
     
-    # Store metrics in model object for later access
+    # Stash metrics in the model for later (kinda hacky but works)
     model.metrics_ = {
         'train_r2': train_r2,
         'test_r2': test_r2,
         'train_mae': train_mae,
         'test_mae': test_mae,
-        'scaler': scaler
+        'scaler': scaler  # need this for predictions later!!
     }
     
     return {
@@ -103,30 +106,31 @@ def fit_linear_crosswalk(X: np.ndarray, y: np.ndarray) -> Dict:
 
 def fit_ensemble_crosswalk(X: np.ndarray, y: np.ndarray) -> GradientBoostingRegressor:
     """
-    Fit ensemble crosswalk model using Gradient Boosting.
+    Train ensemble model for the complicated stuff.
+    
+    GradientBoosting b/c it handles non-linear relationships better.
     
     Args:
-        X: Feature matrix
-        y: Target variable
+        X: satellite features
+        y: AOP measurements
         
     Returns:
-        Trained GradientBoostingRegressor model
+        trained GB model
     """
-    logger.info("Fitting ensemble crosswalk model")
+    logger.info("Training ensemble crosswalk...")
     
-    # Initialize model
+    # GB params - these work pretty well
     model = GradientBoostingRegressor(
-        n_estimators=100,
-        learning_rate=0.1,
-        max_depth=6,
+        n_estimators=100,      # not too many trees
+        learning_rate=0.1,     # conservative lr
+        max_depth=6,           # prevent overfitting 
         random_state=42,
-        subsample=0.8
+        subsample=0.8          # bit of randomness helps
     )
     
-    # Fit model
     model.fit(X, y)
     
-    logger.info("Ensemble crosswalk model fitted successfully")
+    logger.info("Ensemble model done")
     return model
 
 
@@ -137,46 +141,46 @@ def calibrate_satellite_indices(
     model_type: Literal["linear", "ensemble"] = "linear"
 ) -> Dict[str, Union[Dict, GradientBoostingRegressor]]:
     """
-    Calibrate satellite indices using AOP ground truth.
+    Main calibration function - trains models to map satellite -> AOP.
     
     Args:
-        satellite_df: DataFrame with satellite indices
-        aop_df: DataFrame with AOP ground truth
-        target_vars: List of target variables to calibrate
-        model_type: Type of model to use
+        satellite_df: satellite data (the crappy resolution stuff)
+        aop_df: AOP ground truth (the good stuff)
+        target_vars: which AOP variables to predict
+        model_type: 'linear' for simple, 'ensemble' for complex patterns
         
     Returns:
-        Dictionary of trained models for each target variable
+        dict of trained models, one per target var
     """
-    logger.info(f"Calibrating {len(target_vars)} satellite indices with {model_type} models")
+    logger.info(f"Calibrating {len(target_vars)} vars using {model_type} models")
     
-    # Ensure dataframes have matching indices
+    # Make sure we have matching data points
     if hasattr(satellite_df, 'index'):
-        # DataFrame input
+        # pandas dataframe
         common_idx = satellite_df.index.intersection(aop_df.index)
         if len(common_idx) == 0:
-            raise ValueError("No common indices between satellite and AOP data")
+            raise ValueError("No matching indices! Check your data alignment")
         
         satellite_subset = satellite_df.loc[common_idx]
         aop_subset = aop_df.loc[common_idx]
         sample_count = len(common_idx)
     else:
-        # Numpy array input
+        # numpy arrays
         if len(satellite_df) != len(aop_df):
-            raise ValueError("Satellite and AOP data must have the same length")
+            raise ValueError("Arrays must be same length")
         
         satellite_subset = satellite_df
         aop_subset = aop_df
         sample_count = len(satellite_df)
     
-    logger.info(f"Using {sample_count} common samples for calibration")
+    logger.info(f"Got {sample_count} matching samples")
     
-    # Get satellite features (exclude non-numeric columns)
+    # Get numeric features only (no strings/dates/etc)
     if hasattr(satellite_subset, 'select_dtypes'):
-        # DataFrame input
+        # dataframe
         satellite_features = satellite_subset.select_dtypes(include=[np.number])
     else:
-        # Numpy array input
+        # already numpy
         satellite_features = satellite_subset
     
     # Ensure we have numeric data
@@ -192,21 +196,20 @@ def calibrate_satellite_indices(
             logger.warning(f"Target variable {target_var} not found in AOP data")
             continue
         
-        logger.info(f"Calibrating {target_var}")
+        logger.info(f"Working on {target_var}...")
         
-        # Prepare data
         y = aop_subset[target_var].values
         
-        # Remove samples with missing values
+        # Drop NaNs (there's always some...)
         valid_mask = ~(np.isnan(X).any(axis=1) | np.isnan(y))
         X_valid = X[valid_mask]
         y_valid = y[valid_mask]
         
         if len(X_valid) < 10:
-            logger.warning(f"Insufficient data for {target_var}: {len(X_valid)} samples")
-            continue
+            logger.warning(f"Not enough data for {target_var}: only {len(X_valid)} samples")
+            continue  # skip this one
         
-        # Fit model
+        # Train the model
         if model_type == "linear":
             model_result = fit_linear_crosswalk(X_valid, y_valid)
             models[target_var] = model_result
@@ -214,7 +217,7 @@ def calibrate_satellite_indices(
             model = fit_ensemble_crosswalk(X_valid, y_valid)
             models[target_var] = model
     
-    logger.info(f"Successfully calibrated {len(models)} variables")
+    logger.info(f"Done! Calibrated {len(models)} variables")
     return models
 
 
@@ -225,28 +228,29 @@ def validate_crosswalk(
     output_dir: Path
 ) -> pd.DataFrame:
     """
-    Validate crosswalk models and generate metrics.
+    Check if our models actually work.
+    
+    Makes predictions and compares to ground truth, saves plots.
     
     Args:
-        satellite_df: DataFrame with satellite indices
-        aop_df: DataFrame with AOP ground truth
-        models: Dictionary of trained models
-        output_dir: Directory to save validation results
+        satellite_df: satellite data
+        aop_df: ground truth from planes
+        models: our trained models
+        output_dir: where to save results
         
     Returns:
-        DataFrame with validation metrics
+        DataFrame with R², MAE, etc
     """
-    logger.info("Validating crosswalk models")
+    logger.info("Validating models...")
     
-    # Create output directory
     output_dir.mkdir(parents=True, exist_ok=True)
     
     validation_results = []
     
     for target_var, model_info in models.items():
-        logger.info(f"Validating {target_var}")
+        logger.info(f"Checking {target_var}...")
         
-        # Get satellite features
+        # grab numeric cols only
         satellite_features = satellite_df.select_dtypes(include=[np.number])
         
         # Get common samples
@@ -254,42 +258,41 @@ def validate_crosswalk(
         X = satellite_features.loc[common_idx].values
         y_true = aop_df.loc[common_idx, target_var].values
         
-        # Remove missing values
+        # Drop NaNs again
         valid_mask = ~(np.isnan(X).any(axis=1) | np.isnan(y_true))
         X_valid = X[valid_mask]
         y_true_valid = y_true[valid_mask]
         
         if len(X_valid) == 0:
-            continue
+            continue  # nothing to validate
         
-        # Make predictions
+        # Get predictions
         if isinstance(model_info, dict) and 'model' in model_info:
-            # Linear model
+            # linear model
             model = model_info['model']
             if 'scaler' in model_info['metrics']:
                 scaler = model_info['metrics']['scaler']
                 X_scaled = scaler.transform(X_valid)
             else:
-                # No scaler available, use raw features
+                # no scaler? use raw (shouldn't happen tho)
                 X_scaled = X_valid
             y_pred = model.predict(X_scaled)
             model_type = 'ridge'
         else:
-            # Ensemble model
+            # ensemble model
             model = model_info
-            # For ensemble models, assume features are already scaled
-            y_pred = model.predict(X_valid)
+            y_pred = model.predict(X_valid)  # GB doesn't need scaling
             model_type = 'gradient_boosting'
         
-        # Calculate metrics
+        # Calc all the metrics
         r2 = r2_score(y_true_valid, y_pred)
         mae = mean_absolute_error(y_true_valid, y_pred)
         rmse = np.sqrt(mean_squared_error(y_true_valid, y_pred))
         
-        # Calculate bias
+        # bias (are we consistently over/under?)
         bias = np.mean(y_pred - y_true_valid)
         
-        # Calculate correlation
+        # correlation
         correlation = np.corrcoef(y_true_valid, y_pred)[0, 1]
         
         # Store results
@@ -305,14 +308,14 @@ def validate_crosswalk(
         }
         validation_results.append(result)
         
-        # Create scatter plot
+        # Make a nice scatter plot
         plt.figure(figsize=(8, 6))
         plt.scatter(y_true_valid, y_pred, alpha=0.6)
         plt.plot([y_true_valid.min(), y_true_valid.max()], 
-                [y_true_valid.min(), y_true_valid.max()], 'r--', lw=2)
+                [y_true_valid.min(), y_true_valid.max()], 'r--', lw=2)  # 1:1 line
         plt.xlabel(f'AOP {target_var}')
         plt.ylabel(f'Predicted {target_var}')
-        plt.title(f'Crosswalk Validation: {target_var}\nR² = {r2:.3f}, MAE = {mae:.3f}')
+        plt.title(f'{target_var} Validation\nR² = {r2:.3f}, MAE = {mae:.3f}')
         plt.grid(True, alpha=0.3)
         
         # Save plot
@@ -320,12 +323,12 @@ def validate_crosswalk(
         plt.savefig(plot_path, dpi=300, bbox_inches='tight')
         plt.close()
         
-        logger.info(f"{target_var}: R² = {r2:.3f}, MAE = {mae:.3f}")
+        logger.info(f"{target_var}: R²={r2:.3f}, MAE={mae:.3f}")
     
-    # Create summary DataFrame
+    # Make summary df
     results_df = pd.DataFrame(validation_results)
     
-    # Save results
+    # Save to csv
     results_path = output_dir / "crosswalk_validation_results.csv"
     results_df.to_csv(results_path, index=False)
     
@@ -456,18 +459,18 @@ def load_crosswalk_models(
                 'scaler': scaler,
                 'model_type': 'ridge'
             }
-            logger.info(f"Loaded Ridge model for {target_var}")
+            logger.info(f"Loaded Ridge for {target_var}")
             
         else:
-            # Try to load GBM model
+            # try GBM
             gbm_model_path = model_dir / f"crosswalk_models_{target_var}_gbm.pkl"
             
             if gbm_model_path.exists():
                 model = joblib.load(gbm_model_path)
                 models[target_var] = model
-                logger.info(f"Loaded GBM model for {target_var}")
+                logger.info(f"Loaded GBM for {target_var}")
             else:
-                logger.warning(f"No model found for {target_var}")
+                logger.warning(f"No model for {target_var}")
     
     logger.info(f"Loaded {len(models)} crosswalk models")
     return models
@@ -476,68 +479,64 @@ def load_crosswalk_models(
 def apply_crosswalk_models(satellite_data: pd.DataFrame, 
                           crosswalk_models: Dict) -> pd.DataFrame:
     """
-    Apply trained crosswalk models to satellite data.
+    Use trained models to enhance satellite data.
+    
+    Takes low-res satellite data and predicts what high-res AOP would see.
     
     Args:
-        satellite_data: DataFrame with satellite indices
-        crosswalk_models: Dictionary of trained crosswalk models
+        satellite_data: original satellite indices
+        crosswalk_models: our trained models
         
     Returns:
-        DataFrame with enhanced features
+        DataFrame with new calibrated columns
     """
-    logger.info(f"Applying {len(crosswalk_models)} crosswalk models")
+    logger.info(f"Applying {len(crosswalk_models)} models...")
     
     if not crosswalk_models:
-        logger.warning("No crosswalk models provided, returning original data")
+        logger.warning("No models - returning original data")
         return satellite_data.copy()
     
-    # Start with original data
+    # copy original data first
     enhanced_data = satellite_data.copy()
     
-    # Apply each model
+    # apply each model
     for target_var, model_info in crosswalk_models.items():
         try:
             if isinstance(model_info, dict) and 'model' in model_info:
-                # Linear model
+                # linear model needs scaling
                 model = model_info['model']
                 scaler = model_info['metrics']['scaler']
                 
-                # Scale features
                 X_scaled = scaler.transform(satellite_data.values)
-                
-                # Make predictions
                 predictions = model.predict(X_scaled)
                 
-                # Add calibrated values
+                # add new column
                 enhanced_data[f"{target_var}_calibrated"] = predictions
                 
             elif hasattr(model_info, 'predict'):
-                # Ensemble model
+                # ensemble model - no scaling needed
                 model = model_info
                 
-                # Make predictions (assuming features are already scaled)
                 predictions = model.predict(satellite_data.values)
-                
-                # Add calibrated values
                 enhanced_data[f"{target_var}_calibrated"] = predictions
                 
             else:
-                logger.warning(f"Unknown model type for {target_var}")
+                logger.warning(f"Weird model type for {target_var}??")
                 
         except Exception as e:
-            logger.error(f"Error applying model for {target_var}: {e}")
-            # Add default values
+            logger.error(f"Failed to apply {target_var}: {e}")
+            # add dummy values so we don't crash
             enhanced_data[f"{target_var}_calibrated"] = satellite_data.iloc[:, 0].values
     
-    logger.info(f"Applied crosswalk models, added {len(crosswalk_models)} calibrated features")
+    logger.info(f"Added {len(crosswalk_models)} calibrated features")
     return enhanced_data
 
 
 if __name__ == "__main__":
-    # CLI interface
+    # quick CLI for testing
     import argparse
     
-    parser = argparse.ArgumentParser(description="Train and validate AOP crosswalk models")
+    parser = argparse.ArgumentParser(description="Train/validate AOP crosswalk models")
     parser.add_argument("--satellite-data", required=True, help="Path to satellite data CSV")
     parser.add_argument("--aop-data", required=True, help="Path to AOP data CSV")
     parser.add_argument("--target-vars", nargs="+", required=True, help="Target variables to calibrate")

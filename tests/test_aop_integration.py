@@ -1,8 +1,9 @@
 """
-Test suite for AOP Integration System.
+Tests for AOP integration.
 
-This module tests the integration between NEON AOP crosswalk and
-the main wildfire risk prediction system.
+Making sure the AOP crosswalk stuff actually works with 
+our wildfire prediction pipeline. Lots of mocking because
+we don't wanna download gigabytes of data during tests.
 """
 
 import pytest
@@ -27,11 +28,11 @@ from src.utils.geoalign import infer_dst_grid, warp_to_grid
 
 
 class TestAOPIntegration:
-    """Test AOP integration functionality."""
+    """Tests for the main integration manager."""
     
     @pytest.fixture
     def temp_config(self):
-        """Create temporary configuration for testing."""
+        """Make a temp config for testing."""
         config = {
             'paths': {
                 'models_root': 'temp_models',
@@ -39,13 +40,13 @@ class TestAOPIntegration:
                 'outputs_root': 'temp_outputs'
             },
             'neon_api': {
-                'base_url': 'https://test.neonscience.org/api/v0',
+                'base_url': 'https://test.neonscience.org/api/v0',  # fake url
                 'timeout': 30,
                 'max_retries': 2
             }
         }
         
-        # Create temporary directories
+        # make temp dirs
         temp_dir = Path(tempfile.mkdtemp())
         config['paths']['models_root'] = str(temp_dir / 'models')
         config['paths']['processed_data_root'] = str(temp_dir / 'processed')
@@ -53,13 +54,13 @@ class TestAOPIntegration:
         
         yield config, temp_dir
         
-        # Cleanup
+        # cleanup after test
         shutil.rmtree(temp_dir)
     
     @pytest.fixture
     def sample_satellite_data(self):
-        """Create sample satellite data for testing."""
-        np.random.seed(42)
+        """Fake satellite data."""
+        np.random.seed(42)  # reproducible
         n_samples = 100
         
         data = {
@@ -77,7 +78,7 @@ class TestAOPIntegration:
     
     @pytest.fixture
     def sample_aop_data(self):
-        """Create sample AOP data for testing."""
+        """Fake AOP data (airplane measurements)."""
         np.random.seed(42)
         n_samples = 100
         
@@ -94,39 +95,38 @@ class TestAOPIntegration:
         return pd.DataFrame(data)
     
     def test_aop_integration_manager_initialization(self, temp_config):
-        """Test AOP integration manager initialization."""
+        """Check if manager sets up correctly."""
         config, temp_dir = temp_config
         
-        # Create config file
+        # write config
         config_path = temp_dir / 'test_config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
         
-        # Test initialization
+        # should work
         manager = AOPIntegrationManager(str(config_path))
         
         assert manager.config == config
         assert Path(manager.models_dir).exists()
         assert Path(manager.outputs_dir).exists()
-        assert len(manager.crosswalk_models) == 0  # No models initially
+        assert len(manager.crosswalk_models) == 0  # no models yet
     
     def test_enhanced_features_generation(self, temp_config, sample_satellite_data):
-        """Test enhanced features generation."""
+        """Test feature enhancement."""
         config, temp_dir = temp_config
         
-        # Create config file
         config_path = temp_dir / 'test_config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
         
         manager = AOPIntegrationManager(str(config_path))
         
-        # Test without crosswalk models
+        # test w/o models (should still work)
         enhanced_data = manager.get_enhanced_features(
             sample_satellite_data, 'SRER', 2021
         )
         
-        # Original data has 8 columns, we add 3 quality indicators
+        # 8 original cols + 3 metadata cols
         expected_columns = 8 + 3
         assert enhanced_data.shape == (100, expected_columns)
         assert 'crosswalk_models_available' in enhanced_data.columns
@@ -134,28 +134,27 @@ class TestAOPIntegration:
         assert 'enhancement_timestamp' in enhanced_data.columns
     
     def test_integration_validation(self, temp_config):
-        """Test integration validation."""
+        """Check validation logic."""
         config, temp_dir = temp_config
         
-        # Create config file
         config_path = temp_dir / 'test_config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
         
         manager = AOPIntegrationManager(str(config_path))
         
-        # Test validation for non-existent site
+        # validate non-existent site (should fail gracefully)
         validation = manager.validate_integration('SRER', 2021)
         
         assert validation['site_code'] == 'SRER'
         assert validation['year'] == 2021
-        assert validation['integration_status'] == 'not_integrated'
+        assert validation['integration_status'] == 'not_integrated'  # nothing there
         assert not validation['aop_data_available']
         assert not validation['feature_enhancement']
     
     def test_crosswalk_model_training(self, sample_satellite_data, sample_aop_data):
-        """Test crosswalk model training."""
-        # Test linear crosswalk
+        """Test model training."""
+        # try linear models
         target_vars = ['chm_mean', 'ndvi_aop']
         
         models = calibrate_satellite_indices(
@@ -166,7 +165,7 @@ class TestAOPIntegration:
         assert 'chm_mean' in models
         assert 'ndvi_aop' in models
         
-        # Test ensemble crosswalk
+        # try ensemble too
         models_ensemble = calibrate_satellite_indices(
             sample_satellite_data, sample_aop_data, target_vars, model_type="ensemble"
         )
@@ -174,10 +173,10 @@ class TestAOPIntegration:
         assert len(models_ensemble) == 2
     
     def test_chm_feature_extraction(self):
-        """Test CHM feature extraction."""
-        # Create sample CHM data
+        """Test canopy height features."""
+        # fake CHM data
         chm_arr = np.random.uniform(0, 20, (100, 100))
-        chm_arr[0:10, 0:10] = np.nan  # Add some invalid values
+        chm_arr[0:10, 0:10] = np.nan  # add some bad pixels
         
         features = extract_chm_features(chm_arr)
         
@@ -188,15 +187,15 @@ class TestAOPIntegration:
         assert 'rumple_index' in features
         assert 'height_entropy' in features
         
-        # Check value ranges
+        # sanity check values
         assert 0 <= features['canopy_cover_gt2m'] <= 1
         assert 0 <= features['canopy_cover_gt5m'] <= 1
-        assert features['chm_mean'] >= 0
+        assert features['chm_mean'] >= 0  # no negative heights!
     
     def test_spectral_feature_extraction(self):
-        """Test spectral feature extraction."""
-        # Create sample hyperspectral data
-        hsi_arr = np.random.uniform(0, 1, (100, 100, 10))
+        """Test hyperspectral features."""
+        # fake hyperspectral cube
+        hsi_arr = np.random.uniform(0, 1, (100, 100, 10))  # 10 bands
         
         features = extract_spectral_features(hsi_arr)
         
@@ -205,14 +204,14 @@ class TestAOPIntegration:
         assert 'nbr_aop' in features
         assert 'ndwi_aop' in features
         
-        # Check value ranges for vegetation indices
+        # indices should be in [-1, 1]
         assert -1 <= features['ndvi_aop'] <= 1
         assert -1 <= features['evi_aop'] <= 1
         assert -1 <= features['nbr_aop'] <= 1
     
     def test_geospatial_alignment(self):
-        """Test geospatial alignment utilities."""
-        # Mock rasterio functionality
+        """Test geo alignment stuff."""
+        # mock rasterio (don't need real files)
         with patch('rasterio.open') as mock_open:
             mock_src = Mock()
             mock_src.meta = {
@@ -223,8 +222,8 @@ class TestAOPIntegration:
             }
             mock_open.return_value.__enter__.return_value = mock_src
             
-            # Test grid inference
-            bounds = [-111.51, 31.74, -111.46, 31.79]
+            # test grid calc
+            bounds = [-111.51, 31.74, -111.46, 31.79]  # somewhere in AZ
             grid_params = infer_dst_grid(bounds, 'sentinel2_10m')
             
             assert 'crs' in grid_params
@@ -233,63 +232,61 @@ class TestAOPIntegration:
             assert 'height' in grid_params
     
     def test_crosswalk_validation(self, sample_satellite_data, sample_aop_data):
-        """Test crosswalk validation."""
-        # Train models first
+        """Test model validation."""
+        # train first
         target_vars = ['chm_mean', 'ndvi_aop']
         models = calibrate_satellite_indices(
             sample_satellite_data, sample_aop_data, target_vars, model_type="linear"
         )
         
-        # Test validation
+        # then validate
         with tempfile.TemporaryDirectory() as temp_dir:
             validation_results = validate_crosswalk(
                 sample_satellite_data, sample_aop_data, models, Path(temp_dir)
             )
             
-            assert len(validation_results) == 2
+            assert len(validation_results) == 2  # 2 variables
             assert 'target_variable' in validation_results.columns
             assert 'r2' in validation_results.columns
             assert 'mae' in validation_results.columns
     
     def test_integration_report_generation(self, temp_config):
-        """Test integration report generation."""
+        """Test HTML report generation."""
         config, temp_dir = temp_config
         
-        # Create config file
         config_path = temp_dir / 'test_config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
         
         manager = AOPIntegrationManager(str(config_path))
         
-        # Generate report
+        # make report
         report = manager.generate_integration_report(['SRER', 'JORN'], [2021, 2022])
         
         assert isinstance(report, str)
         assert 'AOP Integration Report' in report
         assert 'Integration Summary' in report
-        assert 'SRER' in report
+        assert 'SRER' in report  # should have both sites
         assert 'JORN' in report
     
     def test_enhanced_features_export(self, temp_config, sample_satellite_data):
-        """Test enhanced features export."""
+        """Test export functionality."""
         config, temp_dir = temp_config
         
-        # Create config file
         config_path = temp_dir / 'test_config.yaml'
         with open(config_path, 'w') as f:
             yaml.dump(config, f)
         
         manager = AOPIntegrationManager(str(config_path))
         
-        # Test CSV export
+        # test CSV
         output_path = manager.export_enhanced_features('SRER', 2021, 'csv')
         
         assert output_path is not None
         assert output_path.exists()
         assert output_path.suffix == '.csv'
         
-        # Test parquet export
+        # test parquet
         output_path = manager.export_enhanced_features('SRER', 2021, 'parquet')
         
         assert output_path is not None
@@ -298,11 +295,11 @@ class TestAOPIntegration:
 
 
 class TestAOPCrosswalkModels:
-    """Test AOP crosswalk model functionality."""
+    """Tests for crosswalk models specifically."""
     
     def test_linear_crosswalk_fitting(self):
-        """Test linear crosswalk model fitting."""
-        # Create sample data
+        """Test linear model fitting."""
+        # random data
         X = np.random.randn(100, 5)
         y = np.random.randn(100)
         
@@ -311,11 +308,11 @@ class TestAOPCrosswalkModels:
         assert 'model' in model_result
         assert 'metrics' in model_result
         assert 'feature_importance' in model_result
-        assert model_result['metrics']['test_r2'] >= 0  # R² should be non-negative
+        assert model_result['metrics']['test_r2'] >= 0  # R² can't be negative
     
     def test_ensemble_crosswalk_fitting(self):
-        """Test ensemble crosswalk model fitting."""
-        # Create sample data
+        """Test GB model fitting."""
+        # more random data
         X = np.random.randn(100, 5)
         y = np.random.randn(100)
         
@@ -323,28 +320,28 @@ class TestAOPCrosswalkModels:
         
         assert hasattr(model, 'fit')
         assert hasattr(model, 'predict')
-        assert hasattr(model, 'feature_importances_')
+        assert hasattr(model, 'feature_importances_')  # GB should have this
     
     def test_model_calibration_with_missing_data(self):
-        """Test model calibration with missing data."""
-        # Create data with missing values
+        """Test with NaNs (real data always has em)."""
+        # data with holes
         X = np.random.randn(100, 5)
         y = np.random.randn(100)
         
-        # Add some missing values
+        # mess it up
         X[0:10, 0] = np.nan
         y[0:10] = np.nan
         
-        # Test calibration
+        # try to train anyway
         target_vars = ['target1']
         y_df = pd.DataFrame({'target1': y})
         
         models = calibrate_satellite_indices(X, y_df, target_vars, model_type="linear")
         
-        # Should still work with missing data handling
-        assert len(models) >= 0  # May be 0 if insufficient valid data
+        # should handle NaNs gracefully
+        assert len(models) >= 0  # might be 0 if too many NaNs
 
 
 if __name__ == "__main__":
-    # Run tests
+    # run it!
     pytest.main([__file__, "-v"])
