@@ -1,8 +1,8 @@
 """
-NEON data downloader - grabs AOP data from their servers.
+NEON data downloader for AOP data retrieval.
 
-Handles downloading all the airplane data - LiDAR, hyperspectral, RGB imagery.
-Fair warning: these files are HUGE. Like, go get coffee while downloading huge.
+Manages download of airborne observation platform data including LiDAR, 
+hyperspectral, and RGB imagery. Note: These files can be several gigabytes in size.
 """
 
 import os
@@ -194,14 +194,14 @@ class NEONDataCollector:
         if products:
             aop_data = [d for d in aop_data if d['productCode'] in products]
         
-        # download em all
+        # Download all files
         success_count = 0
         for data in aop_data:
             product_code = data['productCode']
             download_url = data['url']
             
             if not download_url:
-                logger.warning(f"No URL for {product_code}??")
+                logger.warning(f"No URL for {product_code}")
                 continue
             
             # make product folder
@@ -374,7 +374,7 @@ class NEONDataCollector:
         """
         logger.info("Cleaning up temp files...")
         
-        # nuke temp files
+        # Remove temporary files
         temp_patterns = ['*.tmp', '*.temp', '*.zip']
         
         for pattern in temp_patterns:
@@ -388,7 +388,7 @@ class NEONDataCollector:
     def download_aop_data_batch(self, sites: List[str], years: List[int], 
                                output_root: Path, products: Optional[List[str]] = None) -> Dict:
         """
-        Batch download for multiple sites/years (grab coffee!).
+        Batch download for multiple sites/years.
         
         Args:
             sites: site codes

@@ -7,14 +7,14 @@ Real-time wildfire risk predictions using ML, satellite data, and environmental 
 - **Real-time data** - pulls live weather, satellite imagery, and sensor data
 - **ML models** - Random Forest, XGBoost, LightGBM, ConvLSTM, and ensemble stuff
 - **NEON AOP crosswalk** - fancy airborne data that makes predictions way more accurate
-- **Fire case studies** - actual fire data for testing (scary how many there are...)
+- **Fire case studies** - actual fire data for testing and validation
 - **Dashboard** - Plotly Dash UI that updates in real-time 
 - **API** - FastAPI backend, handles training and validation automatically
-- **Latest research** - implemented papers from 2020-2024 (the good stuff)
+- **Latest research** - implemented papers from 2020-2024
 
 ## NEON AOP Crosswalk System
 
-Ok so this is pretty cool - we're using NEON's airplane data to calibrate satellite imagery. Basically teaching satellites to see better by comparing with super high-res airplane scans:
+We use NEON's airplane data to calibrate satellite imagery. This approach teaches satellites to see better by comparing with super high-resolution airplane scans:
 
 ### What's NEON AOP Crosswalk?
 - **High-res ground truth** - 1m resolution from planes (LiDAR, hyperspectral, RGB cameras)
@@ -23,8 +23,8 @@ Ok so this is pretty cool - we're using NEON's airplane data to calibrate satell
 - **Free data!** - all NEON data is public (thank u science)
 
 ### Fire Case Study Sites (High Priority)
-- **GRSM**: Great Smoky Mountains - 2016 Chimney Tops 2 Fire (11k hectares... yikes)
-- **SOAP**: Soaproot Saddle - 2020 Creek Fire (153k ha!!) & 2021 Blue Fire (8.5k ha)
+- **GRSM**: Great Smoky Mountains - 2016 Chimney Tops 2 Fire (11k hectares)
+- **SOAP**: Soaproot Saddle - 2020 Creek Fire (153k ha) & 2021 Blue Fire (8.5k ha)
 - **SYCA**: Sycamore Creek - 2024 Sand Stone Fire (3.2k ha)
 
 ### Ecosystem Diversity Sites (Baseline)
@@ -35,7 +35,7 @@ Ok so this is pretty cool - we're using NEON's airplane data to calibrate satell
 
 ### Data Products
 - **CHM** - 1m res vegetation height maps
-- **Hyperspectral** - 426 bands!! (380-2510nm) for crazy detailed analysis
+- **Hyperspectral** - 426 bands (380-2510nm) for detailed analysis
 - **RGB imagery** - 10cm resolution (you can see individual bushes)
 - **LiDAR point clouds** - super dense 3D data
 
@@ -46,7 +46,7 @@ Ok so this is pretty cool - we're using NEON's airplane data to calibrate satell
 
 ### Fire Research Capabilities
 - **Before/after analysis** - see what changed from fires
-- **Severity mapping** - how bad did it burn? (spoiler: usually pretty bad)
+- **Severity mapping** - quantify burn severity across affected areas
 - **Recovery tracking** - watch nature bounce back over time
 - **Temporal validation** - make sure our models work across different fire events
 
@@ -58,20 +58,20 @@ Ok so this is pretty cool - we're using NEON's airplane data to calibrate satell
 git clone https://github.com/yourusername/wildfire-risk-prediction.git
 cd wildfire-risk-prediction
 
-# Install deps (this takes a min)
+# Install dependencies
 python install_dependencies.py
 
 # Setup env vars
 python create_env_file.py
 
-# Fire it up! (pun intended)
+# Start the application
 python run_dashboard.py
 ```
 
 ### Dependencies
 - **Core**: `requirements.txt` - the essentials
-- **Minimal**: `requirements-minimal.txt` - bare minimum to run predictions
-- **Dev**: `requirements-dev.txt` - testing, linting, all that jazz
+- **Minimal**: `requirements-minimal.txt` - minimum requirements to run predictions
+- **Dev**: `requirements-dev.txt` - testing, linting, and development tools
 
 ## Usage
 
@@ -91,7 +91,7 @@ make process          # extract features
 make calibrate        # train models
 make validate         # check if it actually works
 
-# Or just YOLO it
+# Or run everything at once
 make all             # does everything above
 ```
 
@@ -111,11 +111,11 @@ validation = manager.validate_integration('SOAP', 2020)  # that massive Creek Fi
 ```
 
 ### Dashboard
-- **Real-time monitoring** - watch fire risk live (kinda nerve-wracking tbh)
-- **Interactive maps** - click around, zoom in/out, the works
+- **Real-time monitoring** - watch fire risk live
+- **Interactive maps** - fully interactive with zoom and pan capabilities
 - **Model insights** - see what features matter most
 - **Export data** - CSV, JSON, whatever you need
-- **Fire impact viz** - before/after comparisons (often depressing)
+- **Fire impact viz** - before/after comparisons
 
 ## The Science Behind It
 
@@ -132,7 +132,7 @@ We've implemented a bunch of recent research (2020-2024). Here's what we're usin
 - **ECOSTRESS** - measures plant water stress (thirsty plants = fire risk)
 
 ### Environmental Factors
-- **WUI** - how close to homes/buildings (super important)
+- **WUI** - proximity to homes/buildings (critical factor)
 - **SVI** - which communities are most at risk
 - **Lightning density** - nature's fire starters
 
@@ -201,10 +201,10 @@ PRs welcome! Check out contributing guidelines first.
 
 ### Dev Setup
 ```bash
-# Get dev deps
+# Get development dependencies
 pip install -r requirements-dev.txt
 
-# Format code (plz do this)
+# Format code
 black src/ tests/
 flake8 src/ tests/
 
@@ -214,12 +214,12 @@ pytest --cov=src --cov-report=html
 
 ## License
 
-MIT License - see LICENSE file. Basically do whatever.
+MIT License - see LICENSE file.
 
 ## Thanks to
 
 - **NEON** - for the amazing AOP data
-- **Fire agencies** - CAL FIRE, USFS, NPS, AZ Forestry (the real heroes)
+- **Fire agencies** - CAL FIRE, USFS, NPS, AZ Forestry
 - **OpenWeatherMap** - weather data
 - **Google Earth Engine** - satellite processing power
 - **Researchers** - standing on the shoulders of giants here
@@ -232,4 +232,4 @@ MIT License - see LICENSE file. Basically do whatever.
 
 ---
 
-**BTW**: All the NEON data we use is public. The fire case studies are real events - stay safe out there folks.
+**Note**: All the NEON data we use is publicly available. The fire case studies are based on real events.
