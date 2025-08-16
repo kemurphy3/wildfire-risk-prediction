@@ -1,4 +1,4 @@
-# ensemble model stuff - combines multiple models to (hopefully) get better predictions
+# Ensemble model implementation - combines multiple models for improved predictions
 
 import numpy as np
 import pandas as pd
@@ -20,14 +20,14 @@ from .lightgbm_model import LightGBMFireRiskModel
 
 
 class SklearnWrapper:
-    # wrapper to make our models play nice with sklearn
+    # Wrapper to make custom models compatible with sklearn
     
     def __init__(self, model):
         self.model = model
         self._is_fitted = False
     
     def fit(self, X, y):
-        # fit the model
+        # Fit the model
         # For our custom models, we need to prepare data first
         if hasattr(self.model, 'prepare_data'):
             X_train, X_val, X_test, y_train, y_val, y_test = self.model.prepare_data(
@@ -44,7 +44,7 @@ class SklearnWrapper:
         return self
     
     def predict(self, X):
-        # run predictions
+        # Generate predictions
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
         
@@ -54,7 +54,7 @@ class SklearnWrapper:
             return self.model.predict(X)
     
     def predict_proba(self, X):
-        # get probabilities for classification tasks
+        # Get probabilities for classification tasks
         if not self._is_fitted:
             raise ValueError("Model must be fitted before prediction")
         
@@ -72,8 +72,8 @@ class SklearnWrapper:
 
 class EnsembleFireRiskModel:
     '''
-    combines different models for fire risk prediction. 
-    supports voting, stacking, weighted avg
+    Combines different models for fire risk prediction.
+    Supports voting, stacking, and weighted averaging methods.
     '''
     
     def __init__(
@@ -84,7 +84,7 @@ class EnsembleFireRiskModel:
         model_weights: Optional[List[float]] = None,
         random_state: int = 42
     ):
-        # init ensemble with specified params
+        # Initialize ensemble with specified parameters
         self.model_type = model_type.lower()
         self.ensemble_method = ensemble_method.lower()
         self.random_state = random_state
@@ -149,7 +149,7 @@ class EnsembleFireRiskModel:
         return models
     
     def _validate_base_models(self) -> None:
-        # check models are the right type
+        # Validate that all base models have the correct type
         for i, item in enumerate(self.base_models):
             # Handle both tuple format (name, model) and direct model objects
             if isinstance(item, tuple) and len(item) == 2:
@@ -169,7 +169,7 @@ class EnsembleFireRiskModel:
                 pass
     
     def _build_ensemble_model(self):
-        # build ensemble based on method (voting/stacking/etc)
+        # Build ensemble model based on the chosen method
         # Create sklearn-compatible estimators from our custom models
         sklearn_estimators = []
         for name, model in self.base_models:

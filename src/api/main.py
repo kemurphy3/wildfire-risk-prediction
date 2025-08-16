@@ -1,7 +1,7 @@
 # FastAPI for wildfire risk predictions
 # 
-# Basic API to get fire risk scores for locations. Nothing too fancy,
-# just takes in coords/weather and spits out risk levels.
+# REST API that provides fire risk scores for geographic locations
+# based on weather data and environmental conditions.
 
 import logging
 import warnings
@@ -62,7 +62,7 @@ cache_ttl = timedelta(hours=1)  # Cache predictions for 1 hour
 
 # Pydantic models for request/response validation
 class Location(BaseModel):
-    # just lat/lon coords
+    # Geographic coordinates
     latitude: confloat(ge=-90, le=90) = Field(..., description="Latitude in decimal degrees")
     longitude: confloat(ge=-180, le=180) = Field(..., description="Longitude in decimal degrees")
     elevation: Optional[confloat(ge=0)] = Field(None, description="Elevation in meters above sea level")
@@ -74,7 +74,7 @@ class Location(BaseModel):
         return v
 
 class WeatherData(BaseModel):
-    # weather info for risk calc
+    # Weather data for risk calculation
     temperature: confloat(ge=-50, le=60) = Field(..., description="Temperature in Celsius")
     relative_humidity: confloat(ge=0, le=100) = Field(..., description="Relative humidity as percentage")
     wind_speed: confloat(ge=0, le=100) = Field(..., description="Wind speed in km/h")
@@ -82,7 +82,7 @@ class WeatherData(BaseModel):
     vapor_pressure_deficit: Optional[confloat(ge=0)] = Field(None, description="Vapor pressure deficit in kPa")
 
 class FireRiskRequest(BaseModel):
-    # single location request
+    # Request for single location assessment
     location: Location
     weather: Optional[WeatherData] = Field(None, description="Weather data (optional, will use nearest station if not provided)")
     date: Optional[str] = Field(None, description="Date for assessment (YYYY-MM-DD, defaults to current date)")

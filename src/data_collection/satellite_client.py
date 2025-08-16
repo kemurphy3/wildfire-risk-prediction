@@ -1,5 +1,5 @@
-# satellite data fetcher using Google Earth Engine
-# pulls data from sentinel, modis, landsat etc
+# Satellite data collection using Google Earth Engine
+# Retrieves data from Sentinel, MODIS, Landsat and other sources
 
 import logging
 import warnings
@@ -20,10 +20,10 @@ warnings.filterwarnings("ignore", category=UserWarning, module="ee")
 
 
 class SatelliteDataClient:
-    # GEE client for getting satellite imagery
+    # Google Earth Engine client for satellite imagery retrieval
     
     def __init__(self, cache_dir: str = "./cache/satellite", max_retries: int = 3):
-        # setup GEE connection
+        # Initialize Google Earth Engine connection
         self.cache_dir = cache_dir
         self.max_retries = max_retries
         self.initialized = False

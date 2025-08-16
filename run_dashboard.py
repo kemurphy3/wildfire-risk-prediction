@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# starts the dashboard
+# Dashboard launcher script
 
 import sys
 import os

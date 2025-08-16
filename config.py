@@ -1,5 +1,5 @@
-# config settings for the wildfire app
-# api keys, dashboard settings, etc
+# Configuration settings for the wildfire prediction application
+# Contains API keys, dashboard settings, and service configurations
 
 import os
 from typing import Dict, Any

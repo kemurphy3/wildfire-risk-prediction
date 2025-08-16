@@ -1,4 +1,4 @@
-# ConvLSTM for fire risk - handles spatial + temporal patterns
+# ConvLSTM model for spatiotemporal fire risk prediction
 
 import numpy as np
 import pandas as pd
@@ -15,8 +15,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 class ConvLSTMFireRiskModel:
-    # deep learning model for spatiotemporal fire risk
-    # combines CNN + LSTM
+    # Deep learning model for spatiotemporal fire risk analysis
+    # Combines convolutional and LSTM layers
     
     def __init__(
         self,
@@ -34,7 +34,7 @@ class ConvLSTMFireRiskModel:
         validation_split: float = 0.2,
         random_state: int = 42
     ):
-        # lots of params here... basically sets up the network architecture
+        # Initialize ConvLSTM network architecture
         self.model_type = model_type.lower()
         self.time_steps = time_steps
         self.spatial_dims = spatial_dims
